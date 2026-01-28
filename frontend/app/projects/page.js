@@ -10,7 +10,8 @@ export default function Projects() {
       const token = localStorage.getItem('token');
       if(!token) return;
       try {
-        const resp = await axios.get('http://localhost:3040/api/projects', { headers: { Authorization: 'Bearer '+token } });
+        const resp = await axios.get('https://skill-sync-ai-rnlh.onrender.com', { headers: { Authorization: 'Bearer '+token } });
+        //https://skill-sync-ai-rnlh.onrender.com,http://localhost:3040/api/projects
         setProjects(resp.data.projects || []);
       } catch(err){ console.error(err); }
     }
