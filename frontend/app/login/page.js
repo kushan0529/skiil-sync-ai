@@ -11,7 +11,7 @@ export default function Login() {
   async function submit(e){
     e.preventDefault();
     try {
-      const resp = await axios.post('http://localhost:3040/api/auth/login', { email, password });
+      const resp = await axios.post('https://skill-sync-ai-rnlh.onrender.com', { email, password }); //'http://localhost:3040/api/auth/login
       localStorage.setItem('token', resp.data.token);
       alert('Logged in');
       router.push('/');
