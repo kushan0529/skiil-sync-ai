@@ -9,7 +9,7 @@ module.exports = async function auth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token not provided' });
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     const user = await User.findById(payload.id).select('-password');
     if (!user) return res.status(401).json({ error: 'User not found' });
     req.user = user;

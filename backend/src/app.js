@@ -14,14 +14,22 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || true }));
 app.use(express.json({ limit: '8mb' }));
 
-connectDB(process.env.MONGO_URL);
+// Middleware to ensure DB connection before handling requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB(process.env.MONGO_URL);
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
  
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 
-app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get('/api/health', (req, res) => res.json({ ok: true, ts: Date.now(), db: require('mongoose').connection.readyState }));
 
 app.use(errorMiddleware);
 
