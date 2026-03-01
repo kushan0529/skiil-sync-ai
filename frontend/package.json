@@ -2,6 +2,14 @@
   "name": "skillsync-frontend",
   "version": "1.0.0",
   "private": true,
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "next.config.js",
+  "directories": {
+    "lib": "lib"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,5 +21,7 @@
     "react-dom": "18.2.0",
     "axios": "^1.5.0",
     "socket.io-client": "^4.6.0"
-  }
+  },
+  "devDependencies": {},
+  "keywords": []
 }
