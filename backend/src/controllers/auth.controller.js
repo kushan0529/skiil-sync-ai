@@ -3,7 +3,7 @@ const User = require('../models/User.model');
 const jwt = require('jsonwebtoken');
 
 function signToken(payload, expiresIn = '7d') {
-  return jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', { expiresIn });
+  return jwt.sign(payload, process.env.JWT_SECRET , { expiresIn });
 }
 
 exports.register = async (req, res, next) => {
