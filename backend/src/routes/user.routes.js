@@ -10,6 +10,7 @@ const upload = multer({
 });
 
 router.get('/me', auth, userController.getMe);
+router.get('/', auth, userController.listUsers);
 router.post('/upload-resume', auth, upload.single('resume'), userController.uploadResume);
 
 module.exports = router;

@@ -15,7 +15,12 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('/api/auth/register', formData);
+      await axios.post('/api/auth/register', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      });
       navigate('/login');
     } catch (err: any) {
       setError(err.response?.data?.error || err.response?.data?.message || 'Registration failed');

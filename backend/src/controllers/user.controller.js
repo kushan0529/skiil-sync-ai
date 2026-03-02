@@ -9,6 +9,15 @@ exports.getMe = async (req, res, next) => {
   }
 };
 
+exports.listUsers = async (req, res, next) => {
+  try {
+    const users = await User.find().select('name email role _id');
+    res.json(users);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.uploadResume = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Resume file required' });
