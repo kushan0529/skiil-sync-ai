@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
+import axios from 'axios';
 
 
 const AIChatWidget = () => {
@@ -21,17 +22,14 @@ const AIChatWidget = () => {
     setLoading(true);
 
     try {
-      // Simulate API call for now
-      // const res = await axios.post('/api/ai/chat', { message: userMessage });
-      // const aiResponse = res.data.response;
+      const res = await axios.post('/api/ai/chat', { message: userMessage });
+      const aiResponse = res.data.response;
       
-      setTimeout(() => {
-        setMessages(prev => [...prev, { 
-          role: 'ai', 
-          text: `I've analyzed your request: "${userMessage}". As an AI assistant, I can help optimize your team's workflow. (Simulated Response)` 
-        }]);
-        setLoading(false);
-      }, 1000);
+      setMessages(prev => [...prev, { 
+        role: 'ai', 
+        text: aiResponse
+      }]);
+      setLoading(false);
 
     } catch (err) {
       setMessages(prev => [...prev, { role: 'ai', text: 'Sorry, I encountered an error connecting to the AI service.' }]);

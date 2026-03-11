@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Users, ClipboardList, UserPlus } from 'lucide-react';
+import { Plus, Users, ClipboardList, UserPlus, Zap } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
 import CreateTaskModal from './CreateTaskModal';
 
-const ManagerDashboard = () => {
+interface ManagerDashboardProps {
+  onSuccess?: (msg: string) => void;
+}
+
+const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [unassignedTasks, setUnassignedTasks] = useState<any[]>([]);
@@ -26,7 +30,7 @@ const ManagerDashboard = () => {
       setUnassignedTasks(allTasks.filter((t: any) => !t.assignee));
       
       const allUsers = Array.isArray(usersRes.data) ? usersRes.data : [];
-      setDevelopers(allUsers.filter((u: any) => u.role === 'developer' || u.role === 'member'));
+      setDevelopers(allUsers.filter((u: any) => u.role === 'developer' || u.role === 'member' || u.role === 'user'));
     } catch (err) {
       console.error('Failed to fetch manager dashboard data');
     } finally {
@@ -37,63 +41,117 @@ const ManagerDashboard = () => {
   const handleAssignTask = async (taskId: string, userId: string) => {
     try {
       await axios.put(`/api/tasks/${taskId}/assignee`, { userId });
-      fetchData(); // Refresh
+      fetchData(); 
+      if (onSuccess) onSuccess('Task successfully assigned to team member.');
     } catch (err) {
       console.error('Failed to assign task');
     }
   };
 
-  if (loading) return <div>Loading Manager Panel...</div>;
+  const handleProjectSuccess = (msg: string) => {
+    fetchData();
+    if (onSuccess) onSuccess(msg);
+  };
+
+  if (loading) return (
+    <div className="card" style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--border)' }}>
+        <div className="loading-spinner"></div>
+        <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Synchronizing management data...</p>
+    </div>
+  );
 
   return (
-    <div className="card" style={{ marginBottom: '2rem', border: '2px dashed var(--primary)', background: 'rgba(99, 102, 241, 0.02)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ padding: '0.5rem', background: 'var(--primary)', color: 'white', borderRadius: 'var(--radius)' }}>
-            <Users size={20} />
+    <div className="card glass" style={{ 
+        padding: '2rem', 
+        border: '1px solid var(--primary)', 
+        background: 'rgba(99, 102, 241, 0.03)',
+        boxShadow: '0 8px 32px rgba(99, 102, 241, 0.1)'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ 
+            padding: '0.875rem', 
+            background: 'var(--primary)', 
+            color: 'white', 
+            borderRadius: '16px',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+          }}>
+            <Zap size={28} />
           </div>
           <div>
-            <h3 style={{ margin: 0 }}>Manager Assignment Hub</h3>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Assign tasks and projects to your team</p>
+            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Quick Management Actions</h2>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '1rem', color: 'var(--text-muted)' }}>Allocate resources and initialize new workstreams</p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => setIsProjectModalOpen(true)} className="btn btn-primary btn-sm">
-            <Plus size={16} /> New Project
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            onClick={() => setIsProjectModalOpen(true)} 
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+          >
+            <Plus size={20} /> Create Project
           </button>
-          <button onClick={() => setIsTaskModalOpen(true)} className="btn btn-outline btn-sm">
-            <Plus size={16} /> New Task
+          <button 
+            onClick={() => setIsTaskModalOpen(true)} 
+            className="btn btn-outline"
+            style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, background: 'var(--bg)' }}
+          >
+            <Plus size={20} /> Create Task
           </button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        <div>
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <ClipboardList size={18} /> Unassigned Tasks ({unassignedTasks.length})
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', fontSize: '1.125rem', fontWeight: 700 }}>
+            <ClipboardList size={20} className="text-primary" /> 
+            Backlog: Unassigned Tasks 
+            <span style={{ fontSize: '0.75rem', background: 'var(--primary)', color: 'white', padding: '0.1rem 0.6rem', borderRadius: '50px', marginLeft: '0.5rem' }}>
+                {unassignedTasks.length}
+            </span>
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', padding: '0.25rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '1rem', 
+            maxHeight: '380px', 
+            overflowY: 'auto', 
+            padding: '0.5rem',
+            background: 'rgba(0,0,0,0.02)',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--border)'
+          }}>
             {unassignedTasks.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>All tasks are assigned!</p>
+              <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'var(--bg)', borderRadius: 'var(--radius)' }}>
+                <Users size={32} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>Great job! No unassigned tasks.</p>
+              </div>
             ) : (
               unassignedTasks.map(task => (
-                <div key={task._id} className="card" style={{ padding: '0.75rem', fontSize: '0.9rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{task.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Project: {task.project?.name || 'N/A'}</div>
+                <div key={task._id} className="card" style={{ padding: '1.25rem', border: '1px solid var(--border)', boxShadow: 'none', background: 'var(--bg)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>{task.title}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Briefcase size={12} /> {task.project?.name || 'Independent Task'}
+                      </div>
                     </div>
-                    <div className={`status-badge status-${task.priority || 'medium'}`} style={{ fontSize: '0.7rem' }}>{task.priority}</div>
+                    <span className={`status-badge status-${task.priority || 'medium'}`} style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem' }}>
+                        {task.priority}
+                    </span>
                   </div>
-                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
+                        Assign Contributor
+                    </label>
                     <select 
-                      style={{ fontSize: '0.8rem', padding: '0.25rem' }}
+                      style={{ width: '100%', padding: '0.6rem', fontSize: '0.875rem', borderRadius: '8px' }}
                       onChange={(e) => e.target.value && handleAssignTask(task._id, e.target.value)}
                       value=""
                     >
-                      <option value="">Assign to...</option>
+                      <option value="">Select from available members...</option>
                       {developers.map(dev => (
-                        <option key={dev._id} value={dev._id}>{dev.name}</option>
+                        <option key={dev._id} value={dev._id}>{dev.name} ({dev.role})</option>
                       ))}
                     </select>
                   </div>
@@ -103,25 +161,62 @@ const ManagerDashboard = () => {
           </div>
         </div>
 
-        <div>
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <UserPlus size={18} /> Team Availability
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', fontSize: '1.125rem', fontWeight: 700 }}>
+            <UserPlus size={20} className="text-primary" /> 
+            Talent Pool Availability
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', padding: '0.25rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.75rem', 
+            maxHeight: '380px', 
+            overflowY: 'auto', 
+            padding: '0.5rem'
+          }}>
             {developers.map(dev => (
-              <div key={dev._id} className="card" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '32px', height: '32px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 600 }}>
+              <div key={dev._id} className="card" style={{ 
+                padding: '1rem 1.25rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                border: '1px solid var(--border)',
+                boxShadow: 'none',
+                background: 'var(--bg)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    background: 'var(--primary)', 
+                    color: 'white', 
+                    borderRadius: '12px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: '1rem', 
+                    fontWeight: 700,
+                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)'
+                  }}>
                     {dev.name.charAt(0)}
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{dev.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{dev.role}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700 }}>{dev.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dev.role}</div>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                   {/* This would ideally show task count */}
-                   <span style={{ fontSize: '0.75rem', background: '#e0e7ff', color: '#4f46e5', padding: '0.1rem 0.4rem', borderRadius: '10px' }}>Active</span>
+                   <span style={{ 
+                       fontSize: '0.75rem', 
+                       background: 'rgba(22, 163, 74, 0.1)', 
+                       color: 'var(--success)', 
+                       padding: '0.3rem 0.75rem', 
+                       borderRadius: '50px',
+                       fontWeight: 600,
+                       border: '1px solid rgba(22, 163, 74, 0.2)'
+                    }}>
+                        Available
+                    </span>
                 </div>
               </div>
             ))}
@@ -132,7 +227,7 @@ const ManagerDashboard = () => {
       <CreateProjectModal 
         isOpen={isProjectModalOpen} 
         onClose={() => setIsProjectModalOpen(false)} 
-        onSuccess={fetchData} 
+        onSuccess={handleProjectSuccess} 
       />
       <CreateTaskModal 
         isOpen={isTaskModalOpen} 

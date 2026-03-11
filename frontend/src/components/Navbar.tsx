@@ -26,10 +26,13 @@ const Navbar = () => {
             <>
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
               {isManager && (
-                <NavLink to="/recommendations" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <Sparkles size={16} />
-                  Matchmaker
-                </NavLink>
+                <>
+                  <NavLink to="/manager" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Manager Hub</NavLink>
+                  <NavLink to="/recommendations" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Sparkles size={16} />
+                    Matchmaker
+                  </NavLink>
+                </>
               )}
               <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <User size={20} />

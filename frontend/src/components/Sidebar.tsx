@@ -1,10 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Layout, Briefcase, BarChart2, Calendar, User, LogOut, Moon, Sun } from 'lucide-react';
+import { Layout, Briefcase, BarChart2, Calendar, User, LogOut, Moon, Sun, Users } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../hooks/useAuth';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -15,6 +17,7 @@ const Sidebar = () => {
   const navItems = [
     { icon: Layout, label: 'Dashboard', path: '/' },
     { icon: Briefcase, label: 'Kanban Board', path: '/kanban' },
+    ...(user?.role === 'manager' || user?.role === 'admin' ? [{ icon: Users, label: 'Manager Hub', path: '/manager' }] : []),
     { icon: BarChart2, label: 'Analytics', path: '/analytics' },
     { icon: Calendar, label: 'Calendar', path: '/calendar' },
     { icon: User, label: 'Profile', path: '/profile' },

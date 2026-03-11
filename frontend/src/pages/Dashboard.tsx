@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Briefcase, CheckCircle2, Clock, Users, ArrowRight, Activity } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import ManagerDashboard from '../components/ManagerDashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -60,7 +59,17 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {(user?.role === 'manager' || user?.role === 'admin') && <ManagerDashboard />}
+      {(user?.role === 'manager' || user?.role === 'admin') && (
+        <div className="card glass" style={{ marginBottom: '2rem', border: '1px solid var(--primary)', background: 'rgba(99, 102, 241, 0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem' }}>
+          <div>
+            <h3 style={{ margin: 0, color: 'var(--primary)' }}>Manager Assignment Hub</h3>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>You have manager access. Assign tasks and manage project teams.</p>
+          </div>
+          <Link to="/manager" className="btn btn-primary">
+            Open Manager Hub <ArrowRight size={18} style={{ marginLeft: '0.5rem' }} />
+          </Link>
+        </div>
+      )}
 
       <div className="grid-4" style={{ marginBottom: '2rem' }}>
         <div className="card">

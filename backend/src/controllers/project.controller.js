@@ -1,4 +1,5 @@
 const Project = require('../models/Project.model');
+const Task = require('../models/Task.model');
 const User = require('../models/User.model');
 const aiService = require('../services/ai.service');
 const { seedDemoProjects } = require('../utils/seedProjects');
@@ -43,16 +44,34 @@ exports.assignToBestProject = async (req, res, next) => {
 
 exports.createProject = async (req, res, next) => {
   try {
-    const { name, description, members, requiredSkills } = req.body;
+    const { name, description, members, requiredSkills, startDate, deadline, tasks } = req.body;
     if (!name) return res.status(400).json({ error: 'Name required' });
+    
     const project = await Project.create({ 
       name, 
       description, 
       owner: req.user._id, 
       members: members || [],
-      requiredSkills: requiredSkills || []
+      requiredSkills: requiredSkills || [],
+      startDate,
+      deadline
     });
-    res.json({ project });
+
+    // Create tasks if provided
+    if (tasks && Array.isArray(tasks) && tasks.length > 0) {
+      const taskDocs = tasks.map(t => ({
+        ...t,
+        project: project._id,
+      }));
+      await Task.insertMany(taskDocs);
+    }
+
+    let message = 'Project created successfully';
+    if (members && members.length > 0) {
+      message = `Project created and assigned to ${members.length} members!`;
+    }
+
+    res.json({ project, message });
   } catch (err) { next(err); }
 };
 
@@ -83,6 +102,10 @@ exports.deleteProject = async (req, res, next) => {
   try {
     const project = await Project.findByIdAndDelete(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
+    
+    // Delete all tasks associated with this project
+    await Task.deleteMany({ project: req.params.id });
+    
     res.json({ ok: true });
   } catch (err) { next(err); }
 };

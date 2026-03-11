@@ -42,46 +42,47 @@ async function extractSkillsFromResume(text) {
     return [];
   }
   try {
-    // Limit input text to avoid context bloat
-    const truncatedText = text.slice(0, 6000);
+    const truncatedText = text.slice(0, 10000);
     
-    const prompt = `Extract a concise list of unique technical skills (languages, frameworks, tools) from this resume. 
-    Return ONLY a JSON array of strings. 
-    RULES:
-    1. Maximum 20 most relevant skills.
-    2. No duplicate or repeating phrases.
-    3. No descriptive sentences.
-    4. Format as ["Skill1", "Skill2"].
+    const prompt = `Extract a list of technical skills from the following resume text. 
+    Focus on: Programming Languages, Frameworks, Databases, and Tools.
+    
+    Format the output as a clean JSON array of strings. 
+    Example output: ["React", "Node.js", "MongoDB", "Python"]
     
     Resume text:
     ${truncatedText}`;
     
     const resp = await client.chat.completions.create({
       model: EXTRACTION_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.1, // Slight temperature can actually help avoid loops
-      max_tokens: 500
+      messages: [
+        { role: 'system', content: 'You are a professional technical recruiter. Return ONLY a JSON array.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0,
+      max_tokens: 800
     });
 
-    const out = resp.choices[0].message.content || '';
-    const match = out.match(/\[[\s\S]*\]/);
+    let out = resp.choices[0].message.content || '';
     
+    // Clean up response in case of markdown or extra text
+    if (out.includes('```')) {
+      const match = out.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match) out = match[1];
+    }
+    
+    const match = out.match(/\[[\s\S]*\]/);
     if (match) {
       try {
         let skills = JSON.parse(match[0]);
         if (Array.isArray(skills)) {
-          // SANITY FILTER: Remove duplicates and any unusually long strings or looping patterns
-          skills = [...new Set(skills)] // Deduplicate
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && s.length < 40) // Remove empty or suspiciously long "skills"
-            .filter(s => !s.includes(' - ')) // Remove those repeating " - Query Store" patterns
-            .slice(0, 25); // Hard cap at 25 skills
-            
-          console.log(`[ai] Cleaned skills:`, skills);
-          return skills;
+          return [...new Set(skills)]
+            .map(s => String(s).trim())
+            .filter(s => s.length > 1 && s.length < 50)
+            .slice(0, 30);
         }
       } catch (err) {
-        console.warn('[ai] Parse error', err.message);
+        console.warn('[ai] Parse error in skills extraction', err.message);
       }
     }
     return [];
@@ -113,4 +114,22 @@ async function recommendProjects(user, projects) {
   }
 }
 
-module.exports = { recommendAssignees, extractSkillsFromResume, recommendProjects };
+async function chat(message, user) {
+  try {
+    const prompt = `User ${user.name} asks: ${message}\nContext: User role is ${user.role}. Skills: ${(user.skills || []).join(', ')}. Provide a helpful, concise response about task management, project suggestions, or team optimization.`;
+    
+    const resp = await client.chat.completions.create({
+      model: RECOMMENDATION_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 250
+    });
+
+    return resp.choices[0].message.content || "I'm sorry, I couldn't process that.";
+  } catch (err) {
+    console.error('[ai] chat failed', err.message);
+    return "AI service is temporarily unavailable.";
+  }
+}
+
+module.exports = { recommendAssignees, extractSkillsFromResume, recommendProjects, chat };

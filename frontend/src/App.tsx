@@ -10,6 +10,7 @@ import CalendarPage from './pages/CalendarPage';
 import ProjectDetails from './pages/ProjectDetails';
 import Profile from './pages/Profile';
 import Recommendations from './pages/Recommendations';
+import ManagerAssignment from './pages/ManagerAssignment';
 import { useAuth } from './hooks/useAuth';
 import AIChatWidget from './components/AIChatWidget';
 
@@ -40,7 +41,10 @@ const AppContent = () => {
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         
         {isManager && (
-          <Route path="/recommendations" element={isAuthenticated ? <Recommendations /> : <Navigate to="/login" />} />
+          <>
+            <Route path="/recommendations" element={isAuthenticated ? <Recommendations /> : <Navigate to="/login" />} />
+            <Route path="/manager" element={isAuthenticated ? <ManagerAssignment /> : <Navigate to="/login" />} />
+          </>
         )}
       </Routes>
       {isAuthenticated && <AIChatWidget />}
