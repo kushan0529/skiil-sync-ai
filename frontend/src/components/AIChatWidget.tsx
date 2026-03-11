@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
-import axios from 'axios';
+
 
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);

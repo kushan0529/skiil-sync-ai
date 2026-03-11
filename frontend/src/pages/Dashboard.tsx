@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Briefcase, CheckCircle2, Clock, Users, ArrowRight, Activity } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import ManagerDashboard from '../components/ManagerDashboard';
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeTasks: 0,
@@ -19,20 +22,28 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const projectsRes = await axios.get('/api/projects');
-      const projects = projectsRes.data.projects || [];
+      const [projectsRes, tasksRes, usersRes] = await Promise.all([
+        axios.get('/api/projects'),
+        axios.get('/api/tasks'), // We need a list tasks endpoint
+        axios.get('/api/users')
+      ]);
       
-      // Calculate stats (mocking some data since we don't have aggregation endpoints)
+      const projects = projectsRes.data.projects || [];
+      const tasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
+      const users = Array.isArray(usersRes.data) ? usersRes.data : [];
+      
       setStats({
         totalProjects: projects.length,
-        activeTasks: 12, // Mock
-        completedTasks: 8, // Mock
-        teamMembers: 5 // Mock
+        activeTasks: tasks.filter((t: any) => t.status !== 'done').length,
+        completedTasks: tasks.filter((t: any) => t.status === 'done').length,
+        teamMembers: users.length
       });
 
       setRecentProjects(projects.slice(0, 3));
     } catch (err) {
       console.error('Failed to fetch dashboard data');
+      // Set some defaults so it doesn't break
+      setStats(prev => ({ ...prev }));
     } finally {
       setLoading(false);
     }
@@ -45,13 +56,11 @@ const Dashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1>Dashboard</h1>
-          <p>Welcome back! Here's what's happening today.</p>
+          <p>Welcome back, {user?.name}! Here's what's happening today.</p>
         </div>
-        <button className="btn btn-primary">
-          <Plus size={20} />
-          New Project
-        </button>
       </div>
+
+      {(user?.role === 'manager' || user?.role === 'admin') && <ManagerDashboard />}
 
       <div className="grid-4" style={{ marginBottom: '2rem' }}>
         <div className="card">

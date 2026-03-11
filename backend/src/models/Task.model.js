@@ -14,7 +14,8 @@ const TaskSchema = new mongoose.Schema({
   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },
   preference: { type: String, enum: ['low', 'medium', 'high'], default: 'high' },
   estimatedHours: Number,
-  dueDate: Date,
+  startDate: Date,
+  deadline: Date,
   aiSuggestions: [suggestionSchema]
 }, { timestamps: true });
 

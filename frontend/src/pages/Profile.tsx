@@ -1,12 +1,71 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { User, Mail, Shield, Upload, FileText, Check } from 'lucide-react';
+import { User, Mail, Shield, Upload, FileText, Check, Loader2, Sparkles } from 'lucide-react';
+
+const SkillOverlay = ({ skills }: { skills: string[] }) => {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0,0,0,0.9)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      color: 'white',
+      padding: '2rem',
+      textAlign: 'center'
+    }}>
+      <Sparkles size={64} color="var(--primary)" style={{ marginBottom: '2rem', animation: 'bounce 2s infinite' }} />
+      <h1 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '2rem' }}>Skills Identified!</h1>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', maxWidth: '1000px' }}>
+        {skills.map((skill, i) => (
+          <div 
+            key={skill} 
+            style={{ 
+              fontSize: '2rem', 
+              fontWeight: 700, 
+              padding: '1rem 2rem', 
+              background: 'var(--primary)', 
+              borderRadius: '1rem',
+              animation: `fadeIn 0.5s ease-out forwards ${i * 0.1}s`,
+              opacity: 0,
+              boxShadow: '0 0 20px var(--primary)'
+            }}
+          >
+            {skill}
+          </div>
+        ))}
+      </div>
+      <p style={{ marginTop: '3rem', fontSize: '1.5rem', opacity: 0.8 }}>AI is matching you with the perfect project...</p>
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+      `}</style>
+    </div>
+  );
+};
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showSkills, setShowSkills] = useState(false);
+  const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
 
   useEffect(() => {
     fetchUser();
@@ -29,13 +88,52 @@ const Profile = () => {
     formData.append('resume', file);
 
     setUploading(true);
+    setMessage('Analyzing your resume with AI...');
+    setUploadProgress(20);
+
     try {
+      const interval = setInterval(() => {
+        setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+      }, 800);
+
       const res = await axios.post('/api/users/upload-resume', formData);
-      setMessage('Resume uploaded successfully!');
+      clearInterval(interval);
+      setUploadProgress(100);
+      
+      const skills = res.data.user.skills || [];
+      setExtractedSkills(skills);
       setUser(res.data.user);
+      
+      if (skills.length > 0) {
+        setShowSkills(true);
+        
+        // Call AI assignment in background
+        try {
+          const assignRes = await axios.post('/api/projects/assign-best');
+          const assignedProjectId = assignRes.data.project?._id;
+          
+          setTimeout(() => {
+            setShowSkills(false);
+            if (assignedProjectId) {
+              navigate(`/projects/${assignedProjectId}`);
+            } else {
+              navigate('/');
+            }
+          }, 2500); // 2.5 seconds total to show skills
+        } catch (err) {
+          console.error('Project assignment failed', err);
+          setTimeout(() => {
+            setShowSkills(false);
+            navigate('/');
+          }, 2000);
+        }
+      } else {
+        setMessage('Resume uploaded but no skills identified.');
+        setTimeout(() => setUploading(false), 2000);
+      }
     } catch (err) {
-      setMessage('Failed to upload resume');
-    } finally {
+      setMessage('Failed to upload and analyze resume');
+      setUploadProgress(0);
       setUploading(false);
     }
   };
@@ -44,6 +142,7 @@ const Profile = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      {showSkills && <SkillOverlay skills={extractedSkills} />}
       <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '2rem' }}>Profile Settings</h1>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
@@ -57,7 +156,7 @@ const Profile = () => {
             <div>
               <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Full Name</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}>
-                {user.username}
+                {user.name}
               </div>
             </div>
             
@@ -103,15 +202,31 @@ const Profile = () => {
               </label>
             </div>
             
-            {message && <p style={{ fontSize: '0.875rem', color: message.includes('success') ? 'var(--success)' : 'var(--error)', marginBottom: '1rem', textAlign: 'center' }}>{message}</p>}
+            {message && (
+              <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.875rem', color: message.includes('success') ? 'var(--success)' : (message.includes('Analyzing') ? 'var(--primary)' : 'var(--error)'), marginBottom: '0.5rem' }}>
+                  {message}
+                </p>
+                {uploading && (
+                  <div style={{ width: '100%', background: 'var(--bg-secondary)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${uploadProgress}%`, background: 'var(--primary)', height: '100%', transition: 'width 0.3s ease' }}></div>
+                  </div>
+                )}
+              </div>
+            )}
             
             <button 
               type="submit" 
               className="btn btn-primary" 
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
               disabled={!file || uploading}
             >
-              {uploading ? 'Uploading...' : 'Upload Resume'}
+              {uploading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Processing...
+                </>
+              ) : 'Upload Resume'}
             </button>
           </form>
 

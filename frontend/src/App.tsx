@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -9,11 +9,12 @@ import Analytics from './pages/Analytics';
 import CalendarPage from './pages/CalendarPage';
 import ProjectDetails from './pages/ProjectDetails';
 import Profile from './pages/Profile';
+import Recommendations from './pages/Recommendations';
 import { useAuth } from './hooks/useAuth';
 import AIChatWidget from './components/AIChatWidget';
 
 const AppContent = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, user, loading } = useAuth();
   
   if (loading) {
     return (
@@ -22,6 +23,8 @@ const AppContent = () => {
       </div>
     );
   }
+
+  const isManager = user?.role === 'manager' || user?.role === 'admin';
 
   return (
     <Layout>
@@ -35,6 +38,10 @@ const AppContent = () => {
         <Route path="/calendar" element={isAuthenticated ? <CalendarPage /> : <Navigate to="/login" />} />
         <Route path="/projects/:id" element={isAuthenticated ? <ProjectDetails /> : <Navigate to="/login" />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
+        
+        {isManager && (
+          <Route path="/recommendations" element={isAuthenticated ? <Recommendations /> : <Navigate to="/login" />} />
+        )}
       </Routes>
       {isAuthenticated && <AIChatWidget />}
     </Layout>

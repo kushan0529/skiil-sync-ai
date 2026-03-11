@@ -6,7 +6,9 @@ const projectSchema = new mongoose.Schema({
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   requiredSkills: [{ type: String }],
-  status: { type: String, enum: ['planning', 'active', 'completed', 'on-hold'], default: 'planning' }
+  status: { type: String, enum: ['planning', 'active', 'completed', 'on-hold'], default: 'planning' },
+  startDate: { type: Date },
+  deadline: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Project', projectSchema);

@@ -12,6 +12,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    startDate: '',
     deadline: '',
     members: [] as string[]
   });
@@ -43,7 +44,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
       await axios.post('/api/projects', formData);
       onSuccess();
       onClose();
-      setFormData({ name: '', description: '', deadline: '', members: [] });
+      setFormData({ name: '', description: '', startDate: '', deadline: '', members: [] });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to create project');
     } finally {
@@ -86,14 +87,25 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
           />
         </div>
 
-        <div className="input-group">
-          <label>Deadline</label>
-          <input 
-            type="date" 
-            value={formData.deadline} 
-            onChange={(e) => setFormData({...formData, deadline: e.target.value})} 
-            required
-          />
+        <div className="grid-2">
+          <div className="input-group">
+            <label>Start Date</label>
+            <input 
+              type="date" 
+              value={formData.startDate} 
+              onChange={(e) => setFormData({...formData, startDate: e.target.value})} 
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Deadline</label>
+            <input 
+              type="date" 
+              value={formData.deadline} 
+              onChange={(e) => setFormData({...formData, deadline: e.target.value})} 
+              required
+            />
+          </div>
         </div>
 
         <div className="input-group">

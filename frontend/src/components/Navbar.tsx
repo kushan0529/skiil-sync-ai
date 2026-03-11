@@ -1,15 +1,17 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Layout, User, LogOut } from 'lucide-react';
+import { Layout, User, LogOut, Sparkles } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 const Navbar = () => {
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    logout();
     navigate('/login');
-    window.location.reload();
   };
+
+  const isManager = user?.role === 'manager' || user?.role === 'admin';
 
   return (
     <nav className="navbar">
@@ -20,9 +22,15 @@ const Navbar = () => {
         </Link>
         
         <div className="nav-links">
-          {token ? (
+          {isAuthenticated ? (
             <>
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
+              {isManager && (
+                <NavLink to="/recommendations" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Sparkles size={16} />
+                  Matchmaker
+                </NavLink>
+              )}
               <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
                 <User size={20} />
               </NavLink>

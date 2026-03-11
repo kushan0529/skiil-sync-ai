@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from 'date-fns';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 
 const CalendarPage = () => {
@@ -13,18 +13,8 @@ const CalendarPage = () => {
 
   const fetchTasks = async () => {
     try {
-      // Mock fetching tasks for now, replace with actual API call
-      // Fetch all tasks from all projects (or specific user tasks)
-      const projectRes = await axios.get('/api/projects');
-      const projects = projectRes.data.projects || [];
-      
-      let allTasks: any[] = [];
-      if (projects.length > 0) {
-        // Fetch tasks for first project as example
-        const tasksRes = await axios.get(`/api/tasks/project/${projects[0]._id}`);
-        allTasks = tasksRes.data;
-      }
-      setTasks(allTasks);
+      const tasksRes = await axios.get('/api/tasks');
+      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
     } catch (err) {
       console.error('Failed to fetch tasks for calendar');
     }
@@ -39,7 +29,10 @@ const CalendarPage = () => {
   const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
 
   const getTasksForDay = (day: Date) => {
-    return tasks.filter(task => isSameDay(new Date(task.deadline), day));
+    return tasks.filter(task => 
+      (task.startDate && isSameDay(new Date(task.startDate), day)) || 
+      (task.deadline && isSameDay(new Date(task.deadline), day))
+    );
   };
 
   return (
@@ -101,7 +94,7 @@ const CalendarPage = () => {
                         padding: '0.25rem 0.5rem', 
                         background: 'var(--bg-secondary)', 
                         borderRadius: '4px',
-                        borderLeft: `3px solid ${task.status === 'Completed' ? 'var(--success)' : 'var(--primary)'}`,
+                        borderLeft: `3px solid ${task.status === 'done' ? 'var(--success)' : 'var(--primary)'}`,
                         cursor: 'pointer',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

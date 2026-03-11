@@ -9,8 +9,17 @@ exports.createTask = async (req, res, next) => {
   }
 };
 
-exports.getTask = async (req, res, next) => {
+exports.listTasks = async (req, res, next) => {
   try {
+    const tasks = await Task.find().populate('project', 'name').populate('assignee', 'name');
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getTask = async (req, res, next) => {
+  try{
     const task = await Task.findById(req.params.id).populate('assignee', 'name');
     if (!task) return res.status(404).json({ error: 'Task not found' });
     res.json(task);

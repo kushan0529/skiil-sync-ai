@@ -13,6 +13,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    startDate: '',
     deadline: '',
     priority: 'medium',
     project: defaultProjectId || '',
@@ -62,6 +63,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
       setFormData({
         title: '',
         description: '',
+        startDate: '',
         deadline: '',
         priority: 'medium',
         project: defaultProjectId || '',
@@ -130,7 +132,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
           </div>
         </div>
 
-        <div className="grid-2">
+        <div className="grid-3">
           <div className="input-group">
             <label>Priority</label>
             <select 
@@ -141,6 +143,16 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
               <option value="medium">Medium</option>
               <option value="high">High</option>
             </select>
+          </div>
+
+          <div className="input-group">
+            <label>Start Date</label>
+            <input 
+              type="date" 
+              value={formData.startDate} 
+              onChange={(e) => setFormData({...formData, startDate: e.target.value})} 
+              required
+            />
           </div>
 
           <div className="input-group">
