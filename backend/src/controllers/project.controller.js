@@ -77,7 +77,14 @@ exports.createProject = async (req, res, next) => {
 
 exports.listProjects = async (req, res, next) => {
   try {
-    const projects = await Project.find({ $or: [{ owner: req.user._id }, { members: req.user._id }] }).populate('owner members', '-password');
+    let query = { $or: [{ owner: req.user._id }, { members: req.user._id }] };
+    
+    // If manager or admin, show all projects
+    if (req.user.role === 'manager' || req.user.role === 'admin') {
+      query = {};
+    }
+
+    const projects = await Project.find(query).populate('owner members', '-password');
     res.json({ projects });
   } catch (err) { next(err); }
 };

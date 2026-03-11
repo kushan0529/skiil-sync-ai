@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Users, ClipboardList, UserPlus, Zap } from 'lucide-react';
+import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
 import CreateTaskModal from './CreateTaskModal';
 
@@ -232,7 +232,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
       <CreateTaskModal 
         isOpen={isTaskModalOpen} 
         onClose={() => setIsTaskModalOpen(false)} 
-        onSuccess={fetchData} 
+        onSuccess={handleProjectSuccess} 
       />
     </div>
   );
