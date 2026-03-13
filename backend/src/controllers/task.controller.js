@@ -11,7 +11,11 @@ exports.createTask = async (req, res, next) => {
 
 exports.listTasks = async (req, res, next) => {
   try {
-    const tasks = await Task.find().populate('project', 'name').populate('assignee', 'name');
+    let query = {};
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      query.assignee = req.user._id;
+    }
+    const tasks = await Task.find(query).populate('project', 'name').populate('assignee', 'name');
     res.json(tasks);
   } catch (err) {
     next(err);
@@ -51,6 +55,16 @@ exports.assignee = async (req, res, next) => {
   try {
     const task = await Task.findByIdAndUpdate(req.params.id, { assignee: req.body.userId }, { new: true });
     res.json(task);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteTask = async (req, res, next) => {
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    res.json({ ok: true, message: 'Task deleted successfully' });
   } catch (err) {
     next(err);
   }

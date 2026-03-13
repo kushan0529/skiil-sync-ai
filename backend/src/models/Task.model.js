@@ -16,7 +16,11 @@ const TaskSchema = new mongoose.Schema({
   estimatedHours: Number,
   startDate: Date,
   deadline: Date,
-  aiSuggestions: [suggestionSchema]
+  aiSuggestions: [suggestionSchema],
+  workLogs: [{
+    date: { type: Date, default: Date.now },
+    content: String,
+  }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Task', TaskSchema);

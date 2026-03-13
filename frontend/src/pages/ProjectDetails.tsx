@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
+import { useAuth } from '../context/AuthContext';
 
 interface Task {
   _id: string;
@@ -25,6 +26,7 @@ interface Project {
 
 const ProjectDetails = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,21 @@ const ProjectDetails = () => {
     fetchData();
     setTimeout(() => setSuccessMsg(''), 5000);
   };
+
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    if (window.confirm(`Are you sure you want to delete the task "${taskTitle}"?`)) {
+      try {
+        await axios.delete(`/api/tasks/${taskId}`);
+        setSuccessMsg(`Task "${taskTitle}" deleted successfully.`);
+        fetchData();
+        setTimeout(() => setSuccessMsg(''), 5000);
+      } catch (err) {
+        console.error('Failed to delete task');
+      }
+    }
+  };
+
+  const isManager = user?.role === 'manager' || user?.role === 'admin';
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '5rem' }}>
@@ -133,6 +150,15 @@ const ProjectDetails = () => {
                         </span>
                       </div>
                     </div>
+                    {isManager && (
+                      <button 
+                        onClick={() => handleDeleteTask(task._id, task.title)}
+                        style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}
+                        title="Delete Task"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
                     <button style={{ color: 'var(--text-muted)', background: 'transparent' }}>
                       <MoreVertical size={20} />
                     </button>

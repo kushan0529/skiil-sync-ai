@@ -20,7 +20,16 @@ exports.register = async (req, res, next) => {
     }
     
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, role: req.body.role || 'member' });
+    const role = req.body.role || 'member';
+    
+    if (role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount >= 2) {
+        return res.status(400).json({ error: 'Maximum number of administrators (2) already reached.' });
+      }
+    }
+
+    const user = await User.create({ name, email, password: hashed, role });
     
     const token = signToken({ id: user._id });
     

@@ -1,19 +1,29 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase } from 'lucide-react';
+import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase, FileSearch, Trash2, AlertTriangle } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
 import CreateTaskModal from './CreateTaskModal';
+import Modal from './Modal';
+import { useAuth } from '../context/AuthContext';
 
 interface ManagerDashboardProps {
   onSuccess?: (msg: string) => void;
 }
 
 const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
+  const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [unassignedTasks, setUnassignedTasks] = useState<any[]>([]);
   const [developers, setDevelopers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // User deletion state
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [isUserDeleteModalOpen, setIsUserDeleteModalOpen] = useState(false);
+  const [userDeleteLoading, setUserDeleteLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -52,6 +62,24 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
     fetchData();
     if (onSuccess) onSuccess(msg);
   };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    setUserDeleteLoading(true);
+    try {
+      await axios.delete(`/api/users/${userToDelete._id}`);
+      if (onSuccess) onSuccess(`User "${userToDelete.name}" deleted successfully.`);
+      setIsUserDeleteModalOpen(false);
+      setUserToDelete(null);
+      fetchData();
+    } catch (err) {
+      console.error('Failed to delete user');
+    } finally {
+      setUserDeleteLoading(false);
+    }
+  };
+
+  const isAdmin = currentUser?.role === 'admin';
 
   if (loading) return (
     <div className="card" style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--border)' }}>
@@ -205,15 +233,35 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dev.role}</div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                   <button 
+                     onClick={() => navigate(`/manager/assign/${dev._id}`)}
+                     className="btn btn-outline btn-sm"
+                     style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                   >
+                     <FileSearch size={14} /> Analyze
+                   </button>
+                   {isAdmin && (
+                     <button 
+                       onClick={() => {
+                         setUserToDelete(dev);
+                         setIsUserDeleteModalOpen(true);
+                       }}
+                       className="btn btn-outline btn-sm"
+                       style={{ padding: '0.4rem', color: 'var(--error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                       title="Delete Member"
+                     >
+                       <Trash2 size={14} />
+                     </button>
+                   )}
                    <span style={{ 
                        fontSize: '0.75rem', 
-                       background: 'rgba(22, 163, 74, 0.1)', 
+                       background: 'rgba(22, 163, 163, 0.1)', 
                        color: 'var(--success)', 
                        padding: '0.3rem 0.75rem', 
                        borderRadius: '50px',
                        fontWeight: 600,
-                       border: '1px solid rgba(22, 163, 74, 0.2)'
+                       border: '1px solid rgba(22, 163, 163, 0.2)'
                     }}>
                         Available
                     </span>
@@ -234,6 +282,50 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
         onClose={() => setIsTaskModalOpen(false)} 
         onSuccess={handleProjectSuccess} 
       />
+
+      {/* User Delete Confirmation Modal */}
+      <Modal 
+        isOpen={isUserDeleteModalOpen} 
+        onClose={() => setIsUserDeleteModalOpen(false)} 
+        title="Confirm User Deletion"
+      >
+        <div style={{ textAlign: 'center', padding: '1rem' }}>
+          <div style={{ 
+            width: '64px', 
+            height: '64px', 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            color: 'var(--error)', 
+            borderRadius: '50%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            margin: '0 auto 1.5rem'
+          }}>
+            <AlertTriangle size={32} />
+          </div>
+          <h3 style={{ marginBottom: '1rem' }}>Delete Member?</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: 1.5 }}>
+            Are you sure you want to delete <strong>{userToDelete?.name}</strong>? This action cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button 
+                className="btn btn-outline" 
+                onClick={() => setIsUserDeleteModalOpen(false)}
+                disabled={userDeleteLoading}
+            >
+                Cancel
+            </button>
+            <button 
+                className="btn btn-primary" 
+                onClick={handleDeleteUser}
+                disabled={userDeleteLoading}
+                style={{ background: 'var(--error)', borderColor: 'var(--error)' }}
+            >
+                {userDeleteLoading ? 'Deleting...' : 'Confirm Delete'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

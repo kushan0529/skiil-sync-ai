@@ -12,6 +12,7 @@ import ProjectDetails from './pages/ProjectDetails';
 import Profile from './pages/Profile';
 import Recommendations from './pages/Recommendations';
 import ManagerAssignment from './pages/ManagerAssignment';
+import MemberAssignmentDetail from './pages/MemberAssignmentDetail';
 import Projects from './pages/Projects';
 import AIChatWidget from './components/AIChatWidget';
 
@@ -46,6 +47,7 @@ const AppContent = () => {
           <>
             <Route path="/recommendations" element={isAuthenticated ? <Recommendations /> : <Navigate to="/login" />} />
             <Route path="/manager" element={isAuthenticated ? <ManagerAssignment /> : <Navigate to="/login" />} />
+            <Route path="/manager/assign/:userId" element={isAuthenticated ? <MemberAssignmentDetail /> : <Navigate to="/login" />} />
           </>
         )}
         

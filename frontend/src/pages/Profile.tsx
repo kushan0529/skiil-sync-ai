@@ -184,51 +184,60 @@ const Profile = () => {
             Resume & Skills
           </h3>
           
-          <form onSubmit={handleUpload}>
-            <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '2rem', textAlign: 'center', marginBottom: '1rem' }}>
-              <Upload size={32} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                Upload your resume (PDF) to enable AI skill matching
-              </p>
-              <input 
-                type="file" 
-                onChange={(e) => setFile(e.target.files?.[0] || null)} 
-                accept=".pdf"
-                style={{ display: 'none' }}
-                id="resume-upload"
-              />
-              <label htmlFor="resume-upload" className="btn btn-outline" style={{ cursor: 'pointer' }}>
-                {file ? file.name : 'Select File'}
-              </label>
-            </div>
-            
-            {message && (
-              <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.875rem', color: message.includes('success') ? 'var(--success)' : (message.includes('Analyzing') ? 'var(--primary)' : 'var(--error)'), marginBottom: '0.5rem' }}>
-                  {message}
+          {(user.role === 'manager' || user.role === 'admin') ? (
+            <form onSubmit={handleUpload}>
+              <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius)', padding: '2rem', textAlign: 'center', marginBottom: '1rem' }}>
+                <Upload size={32} color="var(--text-muted)" style={{ marginBottom: '1rem' }} />
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  Upload your resume (PDF) to enable AI skill matching
                 </p>
-                {uploading && (
-                  <div style={{ width: '100%', background: 'var(--bg-secondary)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${uploadProgress}%`, background: 'var(--primary)', height: '100%', transition: 'width 0.3s ease' }}></div>
-                  </div>
-                )}
+                <input 
+                  type="file" 
+                  onChange={(e) => setFile(e.target.files?.[0] || null)} 
+                  accept=".pdf"
+                  style={{ display: 'none' }}
+                  id="resume-upload"
+                />
+                <label htmlFor="resume-upload" className="btn btn-outline" style={{ cursor: 'pointer' }}>
+                  {file ? file.name : 'Select File'}
+                </label>
               </div>
-            )}
-            
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
-              disabled={!file || uploading}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Processing...
-                </>
-              ) : 'Upload Resume'}
-            </button>
-          </form>
+              
+              {message && (
+                <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.875rem', color: message.includes('success') ? 'var(--success)' : (message.includes('Analyzing') ? 'var(--primary)' : 'var(--error)'), marginBottom: '0.5rem' }}>
+                    {message}
+                  </p>
+                  {uploading && (
+                    <div style={{ width: '100%', background: 'var(--bg-secondary)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${uploadProgress}%`, background: 'var(--primary)', height: '100%', transition: 'width 0.3s ease' }}></div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ width: '100%', justifyContent: 'center', gap: '0.5rem' }}
+                disabled={!file || uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Processing...
+                  </>
+                ) : 'Upload Resume'}
+              </button>
+            </form>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)' }}>
+              <Shield size={32} color="var(--primary)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                Only managers can access the AI resume parser. Please contact your manager to update your skills.
+              </p>
+            </div>
+          )}
 
           {user.skills && user.skills.length > 0 && (
             <div style={{ marginTop: '2rem' }}>

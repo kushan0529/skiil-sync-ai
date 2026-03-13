@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const auth = require('../middleware/auth.middleware');
+const permit = require('../middleware/role.middleware');
 const userController = require('../controllers/user.controller');
 const multer = require('multer');
 
@@ -11,6 +12,7 @@ const upload = multer({
 
 router.get('/me', auth, userController.getMe);
 router.get('/', auth, userController.listUsers);
-router.post('/upload-resume', auth, upload.single('resume'), userController.uploadResume);
+router.post('/upload-resume', auth, permit('manager', 'admin'), upload.single('resume'), userController.uploadResume);
+router.delete('/:id', auth, permit('admin'), userController.deleteUser);
 
 module.exports = router;

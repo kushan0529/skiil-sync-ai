@@ -6,11 +6,12 @@ const { seedDemoProjects } = require('../utils/seedProjects');
 
 exports.assignToBestProject = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const targetUserId = req.body.userId || req.user._id;
+    const user = await User.findById(targetUserId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     // 1. Seed demo projects if they don't exist
-    await seedDemoProjects(req.user._id);
+    await seedDemoProjects(targetUserId);
 
     // 2. Find all planning projects
     const projects = await Project.find({ status: 'planning' });
