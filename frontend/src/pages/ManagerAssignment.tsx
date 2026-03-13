@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchProjects } from '../store/slices/projectSlice';
 import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X, UserPlus } from 'lucide-react';
 import ManagerDashboard from '../components/ManagerDashboard';
 import { useAuth } from '../context/AuthContext';
@@ -10,8 +13,9 @@ import AssignMemberModal from '../components/AssignMemberModal';
 const ManagerAssignment = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const { projects, loading } = useSelector((state: RootState) => state.projects);
   const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
@@ -25,23 +29,12 @@ const ManagerAssignment = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const res = await axios.get('/api/projects');
-      setProjects(res.data.projects || []);
-    } catch (err) {
-      console.error('Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchProjects());
+  }, [dispatch]);
 
   const handleAssignSuccess = (msg: string) => {
     setSuccessMessage(msg);
-    fetchProjects();
+    dispatch(fetchProjects());
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -53,7 +46,7 @@ const ManagerAssignment = () => {
       setSuccessMessage(`Project "${projectToDelete.name}" deleted successfully.`);
       setIsDeleteModalOpen(false);
       setProjectToDelete(null);
-      fetchProjects();
+      dispatch(fetchProjects());
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Failed to delete project');
@@ -106,7 +99,7 @@ const ManagerAssignment = () => {
       <div style={{ marginBottom: '3rem' }}>
         <ManagerDashboard onSuccess={(msg) => {
             setSuccessMessage(msg);
-            fetchProjects();
+            dispatch(fetchProjects());
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }} />
       </div>
@@ -130,7 +123,7 @@ const ManagerAssignment = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {loading ? (
+          {loading && projects.length === 0 ? (
              <div className="loading-spinner" style={{ margin: '4rem auto' }}></div>
           ) : filteredProjects.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '5rem 2rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius)' }}>
@@ -203,7 +196,7 @@ const ManagerAssignment = () => {
                   
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Status</div>
-                    <span className={`status-badge status-${project.status}`} style={{ padding: '0.4rem 1rem', borderRadius: '50px' }}>{project.status}</span>
+                    <span className={`status-badge status-${project.status.toLowerCase()}`} style={{ padding: '0.4rem 1rem', borderRadius: '50px' }}>{project.status}</span>
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.75rem' }}>

@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, AppDispatch } from '../store';
+import { checkAuth, loginSuccess, logout as logoutAction } from '../store/slices/authSlice';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -12,48 +14,19 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isAuthenticated, user, loading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      checkAuth();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const res = await axios.get('/api/users/me');
-      setUser(res.data.user);
-      setIsAuthenticated(true);
-    } catch (err) {
-      console.error('Auth check failed');
-      localStorage.removeItem('token');
-      delete axios.defaults.headers.common['Authorization'];
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(checkAuth());
+  }, [dispatch]);
 
   const login = (token: string, userData: any) => {
-    localStorage.setItem('token', token);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setUser(userData);
-    setIsAuthenticated(true);
+    dispatch(loginSuccess({ token, user: userData }));
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
-    setUser(null);
-    setIsAuthenticated(false);
+    dispatch(logoutAction());
   };
 
   return (

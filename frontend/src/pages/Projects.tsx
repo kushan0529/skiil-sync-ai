@@ -1,32 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchProjects } from '../store/slices/projectSlice';
 import axios from 'axios';
 import { Briefcase, Search, ArrowRight, Plus, Clock, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CreateProjectModal from '../components/CreateProjectModal';
 
 const Projects = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { projects, loading } = useSelector((state: RootState) => state.projects);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    try {
-      const res = await axios.get('/api/projects');
-      setProjects(res.data.projects || []);
-    } catch (err) {
-      console.error('Failed to fetch projects');
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch(fetchProjects());
+  }, [dispatch]);
 
   const filteredProjects = projects.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,11 +27,11 @@ const Projects = () => {
 
   const handleCreateSuccess = (msg: string) => {
     setSuccessMessage(msg);
-    fetchProjects();
+    dispatch(fetchProjects());
     setTimeout(() => setSuccessMessage(''), 5000);
   };
 
-  if (loading) return (
+  if (loading && projects.length === 0) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
       <div className="loading-spinner"></div>
     </div>
@@ -108,7 +100,7 @@ const Projects = () => {
                   <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       <Clock size={14} />
-                      Due {new Date(project.deadline).toLocaleDateString()}
+                      Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No date'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                       <Users size={14} />

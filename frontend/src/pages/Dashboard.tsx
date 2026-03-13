@@ -1,63 +1,52 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchProjects } from '../store/slices/projectSlice';
+import { fetchAllTasks, updateTaskStatusInState, addWorkLogToState } from '../store/slices/taskSlice';
+import { fetchUsers } from '../store/slices/userSlice';
 import axios from 'axios';
 import { Plus, Briefcase, CheckCircle2, Clock, Users, ArrowRight, Activity, Calendar, ListTodo, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
+  
+  const { projects, loading: projectsLoading } = useSelector((state: RootState) => state.projects);
+  const { tasks, loading: tasksLoading } = useSelector((state: RootState) => state.tasks);
+  const { users } = useSelector((state: RootState) => state.users);
+
   const [stats, setStats] = useState({
     totalProjects: 0,
     activeTasks: 0,
     completedTasks: 0,
     teamMembers: 0
   });
-  const [recentProjects, setRecentProjects] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const endpoints = [
-        axios.get('/api/projects'),
-        axios.get('/api/tasks'),
-      ];
-      
-      // Only managers/admins can list all users
-      if (user?.role === 'manager' || user?.role === 'admin') {
-        endpoints.push(axios.get('/api/users'));
-      }
-
-      const results = await Promise.all(endpoints);
-      
-      const projects = results[0].data.projects || [];
-      const fetchedTasks = Array.isArray(results[1].data) ? results[1].data : [];
-      const users = results[2]?.data || [];
-      
-      setStats({
-        totalProjects: projects.length,
-        activeTasks: fetchedTasks.filter((t: any) => t.status !== 'done').length,
-        completedTasks: fetchedTasks.filter((t: any) => t.status === 'done').length,
-        teamMembers: users.length || 0
-      });
-
-      setRecentProjects(projects.slice(0, 3));
-      setTasks(fetchedTasks);
-    } catch (err) {
-      console.error('Failed to fetch dashboard data');
-      setStats(prev => ({ ...prev }));
-    } finally {
-      setLoading(false);
+    dispatch(fetchProjects());
+    dispatch(fetchAllTasks());
+    if (user?.role === 'manager' || user?.role === 'admin') {
+      dispatch(fetchUsers());
     }
-  };
+  }, [dispatch, user]);
+
+  useEffect(() => {
+    setStats({
+      totalProjects: projects.length,
+      activeTasks: tasks.filter((t: any) => t.status !== 'done').length,
+      completedTasks: tasks.filter((t: any) => t.status === 'done').length,
+      teamMembers: users.length || 0
+    });
+  }, [projects, tasks, users]);
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
+  const loading = projectsLoading || tasksLoading;
 
-  if (loading) return <div className="loading-spinner"></div>;
+  if (loading && projects.length === 0) return <div className="loading-spinner"></div>;
+
+  const recentProjects = projects.slice(0, 3);
 
   return (
     <div>
@@ -197,7 +186,7 @@ const Dashboard = () => {
                             const newStatus = e.target.value;
                             try {
                               await axios.put(`/api/tasks/${task._id}`, { status: newStatus });
-                              fetchDashboardData();
+                              dispatch(updateTaskStatusInState({ taskId: task._id, status: newStatus }));
                             } catch (err) {
                               console.error('Failed to update status');
                             }
@@ -241,9 +230,12 @@ const Dashboard = () => {
                           onClick={() => {
                             const content = prompt('What did you do today on this task?');
                             if (content) {
+                              const newLog = { content, date: new Date() };
                               axios.put(`/api/tasks/${task._id}`, { 
-                                $push: { workLogs: { content, date: new Date() } } 
-                              }).then(() => fetchDashboardData());
+                                $push: { workLogs: newLog } 
+                              }).then(() => {
+                                dispatch(addWorkLogToState({ taskId: task._id, log: newLog }));
+                              });
                             }
                           }}
                           style={{ marginTop: '0.75rem', background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}

@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchAllTasks, fetchTasksByProjectId } from '../store/slices/taskSlice';
+import { fetchUsers, removeUserFromState } from '../store/slices/userSlice';
+import { fetchProjects } from '../store/slices/projectSlice';
 import axios from 'axios';
 import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase, FileSearch, Trash2, AlertTriangle } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
@@ -14,44 +19,38 @@ interface ManagerDashboardProps {
 const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  
+  const { tasks, loading: tasksLoading } = useSelector((state: RootState) => state.tasks);
+  const { users, loading: usersLoading } = useSelector((state: RootState) => state.users);
+
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [unassignedTasks, setUnassignedTasks] = useState<any[]>([]);
   const [developers, setDevelopers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
+  
   // User deletion state
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isUserDeleteModalOpen, setIsUserDeleteModalOpen] = useState(false);
   const [userDeleteLoading, setUserDeleteLoading] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    dispatch(fetchAllTasks());
+    dispatch(fetchUsers());
+  }, [dispatch]);
 
-  const fetchData = async () => {
-    try {
-      const [tasksRes, usersRes] = await Promise.all([
-        axios.get('/api/tasks'),
-        axios.get('/api/users')
-      ]);
-      
-      const allTasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
-      setUnassignedTasks(allTasks.filter((t: any) => !t.assignee));
-      
-      const allUsers = Array.isArray(usersRes.data) ? usersRes.data : [];
-      setDevelopers(allUsers.filter((u: any) => u.role === 'developer' || u.role === 'member' || u.role === 'user'));
-    } catch (err) {
-      console.error('Failed to fetch manager dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    setUnassignedTasks(tasks.filter((t: any) => !t.assignee));
+  }, [tasks]);
+
+  useEffect(() => {
+    setDevelopers(users.filter((u: any) => u.role === 'developer' || u.role === 'member' || u.role === 'user'));
+  }, [users]);
 
   const handleAssignTask = async (taskId: string, userId: string) => {
     try {
       await axios.put(`/api/tasks/${taskId}/assignee`, { userId });
-      fetchData(); 
+      dispatch(fetchAllTasks()); 
       if (onSuccess) onSuccess('Task successfully assigned to team member.');
     } catch (err) {
       console.error('Failed to assign task');
@@ -59,7 +58,8 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   };
 
   const handleProjectSuccess = (msg: string) => {
-    fetchData();
+    dispatch(fetchAllTasks());
+    dispatch(fetchProjects());
     if (onSuccess) onSuccess(msg);
   };
 
@@ -69,9 +69,9 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
     try {
       await axios.delete(`/api/users/${userToDelete._id}`);
       if (onSuccess) onSuccess(`User "${userToDelete.name}" deleted successfully.`);
+      dispatch(removeUserFromState(userToDelete._id));
       setIsUserDeleteModalOpen(false);
       setUserToDelete(null);
-      fetchData();
     } catch (err) {
       console.error('Failed to delete user');
     } finally {
@@ -80,8 +80,9 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   };
 
   const isAdmin = currentUser?.role === 'admin';
+  const loading = tasksLoading || usersLoading;
 
-  if (loading) return (
+  if (loading && developers.length === 0) return (
     <div className="card" style={{ padding: '3rem', textAlign: 'center', border: '1px dashed var(--border)' }}>
         <div className="loading-spinner"></div>
         <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Synchronizing management data...</p>

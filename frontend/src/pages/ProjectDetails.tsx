@@ -1,60 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../store';
+import { fetchProjectById, clearCurrentProject } from '../store/slices/projectSlice';
+import { fetchTasksByProjectId } from '../store/slices/taskSlice';
 import axios from 'axios';
 import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
 import { useAuth } from '../context/AuthContext';
 
-interface Task {
-  _id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  deadline: string;
-}
-
-interface Project {
-  _id: string;
-  name: string;
-  description: string;
-  status: string;
-  startDate?: string;
-  deadline: string;
-  members: any[];
-}
-
 const ProjectDetails = () => {
   const { id } = useParams();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
-  const [project, setProject] = useState<Project | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  const { currentProject: project, loading: projectLoading } = useSelector((state: RootState) => state.projects);
+  const { projectTasks: tasks, loading: tasksLoading } = useSelector((state: RootState) => state.tasks);
+  
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  const fetchData = async () => {
-    try {
-      const [projectRes, tasksRes] = await Promise.all([
-        axios.get(`/api/projects/${id}`),
-        axios.get(`/api/tasks/project/${id}`)
-      ]);
-      setProject(projectRes.data.project || projectRes.data);
-      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
-    } catch (err) {
-      console.error('Failed to fetch project details');
-    } finally {
-      setLoading(false);
+    if (id) {
+      dispatch(fetchProjectById(id));
+      dispatch(fetchTasksByProjectId(id));
     }
-  };
+    return () => {
+      dispatch(clearCurrentProject());
+    };
+  }, [id, dispatch]);
 
   const handleAssignSuccess = (msg: string) => {
     setSuccessMsg(msg);
-    fetchData();
+    if (id) {
+      dispatch(fetchProjectById(id));
+      dispatch(fetchTasksByProjectId(id));
+    }
     setTimeout(() => setSuccessMsg(''), 5000);
   };
 
@@ -63,7 +44,7 @@ const ProjectDetails = () => {
       try {
         await axios.delete(`/api/tasks/${taskId}`);
         setSuccessMsg(`Task "${taskTitle}" deleted successfully.`);
-        fetchData();
+        if (id) dispatch(fetchTasksByProjectId(id));
         setTimeout(() => setSuccessMsg(''), 5000);
       } catch (err) {
         console.error('Failed to delete task');
@@ -72,14 +53,15 @@ const ProjectDetails = () => {
   };
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
+  const loading = projectLoading || tasksLoading;
 
-  if (loading) return (
+  if (loading && !project) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '5rem' }}>
         <div className="loading-spinner"></div>
     </div>
   );
   
-  if (!project) return (
+  if (!project && !loading) return (
     <div className="card" style={{ textAlign: 'center', padding: '5rem' }}>
         <h2>Project not found</h2>
         <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>Back to Dashboard</Link>
@@ -100,8 +82,8 @@ const ProjectDetails = () => {
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>{project.name}</h1>
-            <p style={{ color: 'var(--text-muted)', maxWidth: '700px', fontSize: '1.1rem', lineHeight: 1.6 }}>{project.description}</p>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>{project?.name}</h1>
+            <p style={{ color: 'var(--text-muted)', maxWidth: '700px', fontSize: '1.1rem', lineHeight: 1.6 }}>{project?.description}</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button className="btn btn-outline" style={{ background: 'var(--bg)' }} onClick={() => setIsAssignModalOpen(true)}>
@@ -182,7 +164,7 @@ const ProjectDetails = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Current Status</label>
-                  <span className={`status-badge status-${project.status.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project.status}</span>
+                  <span className={`status-badge status-${project?.status?.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project?.status}</span>
                 </div>
                 
                 <div className="grid-1" style={{ gap: '1rem' }}>
@@ -191,11 +173,11 @@ const ProjectDetails = () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem', fontWeight: 500 }}>
                                 <Calendar size={18} className="text-primary" />
-                                <span>Starts: {project.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Not set'}</span>
+                                <span>Starts: {project?.startDate ? new Date(project.startDate).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Not set'}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem', fontWeight: 500 }}>
                                 <Clock size={18} className="text-error" />
-                                <span>Ends: {new Date(project.deadline).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                                <span>Ends: {project?.deadline ? new Date(project.deadline).toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Not set'}</span>
                             </div>
                         </div>
                     </div>
@@ -229,13 +211,15 @@ const ProjectDetails = () => {
           </div>
         </div>
       </div>
-      <AssignMemberModal
-        isOpen={isAssignModalOpen}
-        onClose={() => setIsAssignModalOpen(false)}
-        projectId={id || ''}
-        currentMembers={project.members || []}
-        onSuccess={handleAssignSuccess}
-      />
+      {project && (
+        <AssignMemberModal
+          isOpen={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+          projectId={id || ''}
+          currentMembers={project.members || []}
+          onSuccess={handleAssignSuccess}
+        />
+      )}
     </div>
   );
 };
