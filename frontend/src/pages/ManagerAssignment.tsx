@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X, UserPlus } from 'lucide-react';
 import ManagerDashboard from '../components/ManagerDashboard';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
+import AssignMemberModal from '../components/AssignMemberModal';
 
 const ManagerAssignment = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +19,10 @@ const ManagerAssignment = () => {
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Assignment state
+  const [projectToAssign, setProjectToAssign] = useState<any>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -30,6 +37,12 @@ const ManagerAssignment = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAssignSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    fetchProjects();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteProject = async () => {
@@ -196,10 +209,20 @@ const ManagerAssignment = () => {
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button 
                         className="btn btn-outline btn-sm"
-                        onClick={() => window.location.href = `/projects/${project._id}`}
+                        onClick={() => navigate(`/projects/${project._id}`)}
                         style={{ padding: '0.6rem 1rem' }}
                     >
                         View Details <ArrowRight size={16} style={{ marginLeft: '0.5rem' }} />
+                    </button>
+                    <button 
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                            setProjectToAssign(project);
+                            setIsAssignModalOpen(true);
+                        }}
+                        style={{ padding: '0.6rem 1.25rem' }}
+                    >
+                        <UserPlus size={18} /> Assign
                     </button>
                     <button 
                         className="btn btn-outline btn-sm"
@@ -263,6 +286,19 @@ const ManagerAssignment = () => {
           </div>
         </div>
       </Modal>
+
+      {projectToAssign && (
+        <AssignMemberModal
+          isOpen={isAssignModalOpen}
+          onClose={() => {
+            setIsAssignModalOpen(false);
+            setProjectToAssign(null);
+          }}
+          projectId={projectToAssign._id}
+          currentMembers={projectToAssign.members || []}
+          onSuccess={handleAssignSuccess}
+        />
+      )}
     </div>
   );
 };

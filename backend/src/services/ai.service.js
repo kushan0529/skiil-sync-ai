@@ -21,11 +21,12 @@ async function recommendAssignees(task, users) {
     });
 
     const out = resp.choices[0].message.content || '';
-    const match = out.match(/\[.*\]/s);
-    if (match) {
+    const jsonMatch = out.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
       try {
-        return JSON.parse(match[0]);
+        return JSON.parse(jsonMatch[0]);
       } catch (err) {
+        console.warn('[ai] Parse error in recommendation response', err.message);
         return [];
       }
     }
@@ -65,16 +66,17 @@ async function extractSkillsFromResume(text) {
 
     let out = resp.choices[0].message.content || '';
     
-    // Clean up response in case of markdown or extra text
+    // Clean up response: remove markdown code blocks
     if (out.includes('```')) {
-      const match = out.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (match) out = match[1];
+      const markdownMatch = out.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (markdownMatch) out = markdownMatch[1];
     }
     
-    const match = out.match(/\[[\s\S]*\]/);
-    if (match) {
+    // Attempt to extract the first valid JSON array found in the output
+    const jsonMatch = out.match(/\[[\s\S]*?\]/);
+    if (jsonMatch) {
       try {
-        let skills = JSON.parse(match[0]);
+        let skills = JSON.parse(jsonMatch[0]);
         if (Array.isArray(skills)) {
           return [...new Set(skills)]
             .map(s => String(s).trim())
@@ -82,7 +84,21 @@ async function extractSkillsFromResume(text) {
             .slice(0, 30);
         }
       } catch (err) {
-        console.warn('[ai] Parse error in skills extraction', err.message);
+        // If the first match fails, the model might have nested brackets or complex text. 
+        // Fallback: search for the last closing bracket if the first match was incomplete
+        try {
+          const lastBracketIndex = out.lastIndexOf(']');
+          const firstBracketIndex = out.indexOf('[');
+          if (firstBracketIndex !== -1 && lastBracketIndex !== -1 && lastBracketIndex > firstBracketIndex) {
+            const potentialJson = out.substring(firstBracketIndex, lastBracketIndex + 1);
+            let skills = JSON.parse(potentialJson);
+            if (Array.isArray(skills)) {
+              return [...new Set(skills)].map(s => String(s).trim()).filter(s => s.length > 1).slice(0, 30);
+            }
+          }
+        } catch (innerErr) {
+          console.warn('[ai] Parse error in skills extraction', err.message);
+        }
       }
     }
     return [];
@@ -104,9 +120,12 @@ async function recommendProjects(user, projects) {
     });
 
     const out = resp.choices[0].message.content || '';
-    const match = out.match(/\[.*\]/s);
-    if (match) {
-      try { return JSON.parse(match[0]); } catch (e) { return []; }
+    const jsonMatch = out.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      try { return JSON.parse(jsonMatch[0]); } catch (e) { 
+        console.warn('[ai] Parse error in project recommendation', e.message);
+        return []; 
+      }
     }
     return [];
   } catch (err) {

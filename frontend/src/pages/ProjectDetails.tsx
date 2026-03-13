@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles } from 'lucide-react';
+import AssignMemberModal from '../components/AssignMemberModal';
 
 interface Task {
   _id: string;
@@ -19,6 +20,7 @@ interface Project {
   status: string;
   startDate?: string;
   deadline: string;
+  members: any[];
 }
 
 const ProjectDetails = () => {
@@ -26,6 +28,8 @@ const ProjectDetails = () => {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -44,6 +48,12 @@ const ProjectDetails = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAssignSuccess = (msg: string) => {
+    setSuccessMsg(msg);
+    fetchData();
+    setTimeout(() => setSuccessMsg(''), 5000);
   };
 
   if (loading) return (
@@ -66,14 +76,19 @@ const ProjectDetails = () => {
           <ArrowLeft size={16} />
           Back to Dashboard
         </Link>
+        {successMsg && (
+          <div className="status-badge status-active" style={{ width: '100%', padding: '1rem', marginBottom: '1.5rem', justifyContent: 'center', fontSize: '1rem' }}>
+            {successMsg}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>{project.name}</h1>
             <p style={{ color: 'var(--text-muted)', maxWidth: '700px', fontSize: '1.1rem', lineHeight: 1.6 }}>{project.description}</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button className="btn btn-outline" style={{ background: 'var(--bg)' }}>
-              <UserPlus size={18} /> Invite Team
+            <button className="btn btn-outline" style={{ background: 'var(--bg)' }} onClick={() => setIsAssignModalOpen(true)}>
+              <UserPlus size={18} /> Manage Team
             </button>
             <button className="btn btn-primary">
               <Plus size={18} /> New Task
@@ -188,6 +203,13 @@ const ProjectDetails = () => {
           </div>
         </div>
       </div>
+      <AssignMemberModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        projectId={id || ''}
+        currentMembers={project.members || []}
+        onSuccess={handleAssignSuccess}
+      />
     </div>
   );
 };

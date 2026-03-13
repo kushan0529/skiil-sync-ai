@@ -1,7 +1,17 @@
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-export const useAuth = () => {
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: any;
+  loading: boolean;
+  login: (token: string, userData: any) => void;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -22,8 +32,11 @@ export const useAuth = () => {
       setUser(res.data.user);
       setIsAuthenticated(true);
     } catch (err) {
+      console.error('Auth check failed');
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      setIsAuthenticated(false);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -43,5 +56,17 @@ export const useAuth = () => {
     setIsAuthenticated(false);
   };
 
-  return { isAuthenticated, user, loading, login, logout };
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

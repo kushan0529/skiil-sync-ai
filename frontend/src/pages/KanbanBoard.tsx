@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import axios from 'axios';
-import { Plus, MoreVertical, Calendar } from 'lucide-react';
+import { Plus, MoreVertical, Calendar, Briefcase } from 'lucide-react';
+import CreateTaskModal from '../components/CreateTaskModal';
 
 interface Task {
   _id: string;
@@ -10,18 +11,21 @@ interface Task {
   status: string;
   deadline: string;
   priority: string;
+  project?: {
+    name: string;
+  };
 }
 
 const columns = {
-  'Todo': { title: 'To Do', color: 'var(--text-muted)' },
-  'In Progress': { title: 'In Progress', color: 'var(--primary)' },
-  'Review': { title: 'Review', color: '#d97706' }, // amber-600
-  'Completed': { title: 'Done', color: 'var(--success)' }
+  'todo': { title: 'To Do', color: 'var(--text-muted)' },
+  'in-progress': { title: 'In Progress', color: 'var(--primary)' },
+  'done': { title: 'Done', color: 'var(--success)' }
 };
 
 const KanbanBoard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -29,22 +33,8 @@ const KanbanBoard = () => {
 
   const fetchTasks = async () => {
     try {
-      // In a real app, you might want to fetch all tasks or tasks for a specific project
-      // For now, let's fetch tasks for the first available project or all tasks if possible
-      // Since our API is project-centric, let's assume we fetch tasks for "all projects" or similar
-      // For demo, we might need to iterate projects or just mock if endpoint is missing.
-      // But we have /api/tasks/project/:id.
-      // Let's first fetch projects, then fetch tasks for the first project as a default.
-      
-      const projectRes = await axios.get('/api/projects');
-      const projects = projectRes.data.projects || [];
-      
-      if (projects.length > 0) {
-        const tasksRes = await axios.get(`/api/tasks/project/${projects[0]._id}`);
-        setTasks(tasksRes.data);
-      } else {
-        setTasks([]);
-      }
+      const tasksRes = await axios.get('/api/tasks');
+      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
     } catch (err) {
       console.error('Failed to fetch tasks');
     } finally {
@@ -75,36 +65,38 @@ const KanbanBoard = () => {
     }
   };
 
-  if (loading) return <div className="loading-spinner"></div>;
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+      <div className="loading-spinner"></div>
+    </div>
+  );
 
   const getTasksByStatus = (status: string) => tasks.filter(t => t.status === status);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="fade-in">
+      <div className="flex-between mb-8">
         <div>
-          <h1>Kanban Board</h1>
-          <p>Drag and drop tasks to update progress</p>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Kanban Board</h1>
+          <p className="text-muted">Orchestrate your workflow with drag-and-drop precision.</p>
         </div>
-        <button className="btn btn-primary">
-          <Plus size={20} />
-          New Task
+        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+          <Plus size={20} /> New Task
         </button>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem', overflowX: 'auto', paddingBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', overflowX: 'auto', paddingBottom: '2rem' }}>
           {Object.entries(columns).map(([statusKey, config]) => (
-            <div key={statusKey} style={{ minWidth: '280px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: config.color }}>
-                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: config.color }}></div>
+            <div key={statusKey} style={{ minWidth: '320px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', padding: '0 0.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: config.color, fontWeight: 700 }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: config.color, boxShadow: `0 0 10px ${config.color}44` }}></div>
                   {config.title}
-                  <span style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.75rem' }}>
+                  <span style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', padding: '0.2rem 0.75rem', borderRadius: '50px', fontSize: '0.8rem' }}>
                     {getTasksByStatus(statusKey).length}
                   </span>
                 </h3>
-                <button style={{ color: 'var(--text-muted)' }}><Plus size={16} /></button>
               </div>
 
               <Droppable droppableId={statusKey}>
@@ -113,10 +105,12 @@ const KanbanBoard = () => {
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                     style={{
-                      background: snapshot.isDraggingOver ? 'var(--bg-secondary)' : 'transparent',
+                      background: snapshot.isDraggingOver ? 'rgba(99, 102, 241, 0.03)' : 'var(--bg-secondary)',
                       borderRadius: 'var(--radius)',
-                      minHeight: '500px',
-                      transition: 'background 0.2s'
+                      minHeight: '600px',
+                      padding: '1rem',
+                      transition: 'all 0.2s ease',
+                      border: snapshot.isDraggingOver ? '2px dashed var(--primary)' : '2px solid transparent'
                     }}
                   >
                     {getTasksByStatus(statusKey).map((task, index) => (
@@ -129,22 +123,32 @@ const KanbanBoard = () => {
                             className="card"
                             style={{
                               marginBottom: '1rem',
-                              padding: '1rem',
+                              padding: '1.25rem',
+                              background: 'var(--bg)',
+                              border: '1px solid var(--border)',
+                              boxShadow: snapshot.isDragging ? 'var(--shadow-lg)' : 'none',
                               ...provided.draggableProps.style,
-                              opacity: snapshot.isDragging ? 0.8 : 1,
+                              opacity: snapshot.isDragging ? 0.9 : 1,
                               transform: snapshot.isDragging ? `${provided.draggableProps.style?.transform} scale(1.02)` : provided.draggableProps.style?.transform,
                             }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: task.priority === 'high' ? 'var(--error)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                              <span className={`status-badge status-${task.priority}`} style={{ fontSize: '0.65rem' }}>
                                 {task.priority}
                               </span>
                               <button style={{ color: 'var(--text-muted)' }}><MoreVertical size={16} /></button>
                             </div>
-                            <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>{task.title}</h4>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem' }}>
-                              <Calendar size={14} />
-                              {new Date(task.deadline).toLocaleDateString()}
+                            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', lineHeight: 1.4 }}>{task.title}</h4>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <Briefcase size={14} />
+                                    <span style={{ fontWeight: 500 }}>{task.project?.name || 'Independent'}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <Calendar size={14} />
+                                    <span>{new Date(task.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                </div>
                             </div>
                           </div>
                         )}
@@ -158,6 +162,12 @@ const KanbanBoard = () => {
           ))}
         </div>
       </DragDropContext>
+
+      <CreateTaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => fetchTasks()}
+      />
     </div>
   );
 };

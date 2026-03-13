@@ -185,7 +185,7 @@ p { margin-bottom: 1rem; color: var(--text-muted); }
 
 .flex-center { display: flex; align-items: center; justify-content: center; }
 .flex-between { display: flex; align-items: center; justify-content: space-between; }
-.flex-column { display: flex; flexDirection: column; }
+.flex-column { display: flex; flex-direction: column; }
 
 /* Status Badges */
 .status-badge {

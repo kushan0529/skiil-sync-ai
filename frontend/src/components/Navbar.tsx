@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Layout, User, LogOut, Sparkles } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -25,6 +25,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <>
               <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
+              <NavLink to="/projects" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Projects</NavLink>
               {isManager && (
                 <>
                   <NavLink to="/manager" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>Manager Hub</NavLink>

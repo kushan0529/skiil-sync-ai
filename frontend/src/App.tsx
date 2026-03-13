@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -11,7 +12,7 @@ import ProjectDetails from './pages/ProjectDetails';
 import Profile from './pages/Profile';
 import Recommendations from './pages/Recommendations';
 import ManagerAssignment from './pages/ManagerAssignment';
-import { useAuth } from './hooks/useAuth';
+import Projects from './pages/Projects';
 import AIChatWidget from './components/AIChatWidget';
 
 const AppContent = () => {
@@ -34,10 +35,11 @@ const AppContent = () => {
         <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
         
         <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+        <Route path="/projects" element={isAuthenticated ? <Projects /> : <Navigate to="/login" />} />
+        <Route path="/projects/:id" element={isAuthenticated ? <ProjectDetails /> : <Navigate to="/login" />} />
         <Route path="/kanban" element={isAuthenticated ? <KanbanBoard /> : <Navigate to="/login" />} />
         <Route path="/analytics" element={isAuthenticated ? <Analytics /> : <Navigate to="/login" />} />
         <Route path="/calendar" element={isAuthenticated ? <CalendarPage /> : <Navigate to="/login" />} />
-        <Route path="/projects/:id" element={isAuthenticated ? <ProjectDetails /> : <Navigate to="/login" />} />
         <Route path="/profile" element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} />
         
         {isManager && (
@@ -46,6 +48,8 @@ const AppContent = () => {
             <Route path="/manager" element={isAuthenticated ? <ManagerAssignment /> : <Navigate to="/login" />} />
           </>
         )}
+        
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {isAuthenticated && <AIChatWidget />}
     </Layout>
@@ -55,9 +59,11 @@ const AppContent = () => {
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

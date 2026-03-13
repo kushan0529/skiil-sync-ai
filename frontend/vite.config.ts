@@ -8,9 +8,8 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:4040',
         changeOrigin: true,
-        // The backend already uses /api prefix in its routes, so we don't need to rewrite
       }
     }
   }

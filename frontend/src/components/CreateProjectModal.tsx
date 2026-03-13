@@ -260,8 +260,8 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
 
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
           <button type="button" onClick={onClose} className="btn btn-outline" style={{ padding: '0.75rem 1.5rem' }}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '0.75rem 2rem' }}>
-            {loading ? 'Initializing Project...' : 'Launch Project'}
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '0.75rem 2.5rem', fontSize: '1rem', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)' }}>
+            {loading ? 'Initializing Project...' : 'Create & Launch Project'}
           </button>
         </div>
       </form>
