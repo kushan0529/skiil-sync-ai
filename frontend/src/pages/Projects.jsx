@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import CreateProjectModal from '../components/CreateProjectModal';
 
 const Projects = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
   const { user } = useAuth();
   const { projects, loading } = useSelector((state: RootState) => state.projects);
   const [searchTerm, setSearchTerm] = useState('');

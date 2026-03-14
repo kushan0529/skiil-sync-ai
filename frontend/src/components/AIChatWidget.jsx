@@ -5,13 +5,13 @@ import axios from 'axios';
 
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'ai', text: string }>([
     { role: 'ai', text: 'Hi! I am your SkillSync Assistant. How can I help you today?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
