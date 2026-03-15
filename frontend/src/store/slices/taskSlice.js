@@ -1,14 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-interface TaskState {
-  tasks: any[];
-  projectTasks: any[];
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: TaskState = {
+const initialState = {
   tasks: [],
   projectTasks: [],
   loading: false,
@@ -19,16 +12,16 @@ export const fetchAllTasks = createAsyncThunk('tasks/fetchAllTasks', async (_, {
   try {
     const res = await axios.get('/api/tasks');
     return res.data;
-  } catch (err: any) {
+  } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch tasks');
   }
 });
 
-export const fetchTasksByProjectId = createAsyncThunk('tasks/fetchByProject', async (projectId: string, { rejectWithValue }) => {
+export const fetchTasksByProjectId = createAsyncThunk('tasks/fetchByProject', async (projectId, { rejectWithValue }) => {
   try {
     const res = await axios.get(`/api/tasks/project/${projectId}`);
     return res.data;
-  } catch (err: any) {
+  } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch project tasks');
   }
 });
@@ -37,14 +30,14 @@ const taskSlice = createSlice({
   name: 'tasks',
   initialState,
   reducers: {
-    updateTaskStatusInState: (state, action: PayloadAction<{ taskId: string; status: string }>) => {
+    updateTaskStatusInState: (state, action) => {
       const task = state.tasks.find(t => t._id === action.payload.taskId);
       if (task) task.status = action.payload.status;
       
       const pTask = state.projectTasks.find(t => t._id === action.payload.taskId);
       if (pTask) pTask.status = action.payload.status;
     },
-    addWorkLogToState: (state, action: PayloadAction<{ taskId: string; log: any }>) => {
+    addWorkLogToState: (state, action) => {
       const task = state.tasks.find(t => t._id === action.payload.taskId);
       if (task) {
         if (!task.workLogs) task.workLogs = [];

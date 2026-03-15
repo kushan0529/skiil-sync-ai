@@ -1,13 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-interface UserState {
-  users: any[];
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: UserState = {
+const initialState = {
   users: [],
   loading: false,
   error: null,
@@ -17,7 +11,7 @@ export const fetchUsers = createAsyncThunk('users/fetchUsers', async (_, { rejec
   try {
     const res = await axios.get('/api/users');
     return Array.isArray(res.data) ? res.data : [];
-  } catch (err: any) {
+  } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch users');
   }
 });
@@ -26,7 +20,7 @@ const userSlice = createSlice({
   name: 'users',
   initialState,
   reducers: {
-    removeUserFromState: (state, action: PayloadAction<string>) => {
+    removeUserFromState: (state, action) => {
       state.users = state.users.filter(u => u._id !== action.payload);
     }
   },
@@ -40,7 +34,7 @@ const userSlice = createSlice({
         state.loading = false;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
-        state.error = action.payload as string;
+        state.error = action.payload;
         state.loading = false;
       });
   },

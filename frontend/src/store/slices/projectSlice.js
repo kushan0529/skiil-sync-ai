@@ -1,14 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-interface ProjectState {
-  projects: any[];
-  currentProject: any | null;
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: ProjectState = {
+const initialState = {
   projects: [],
   currentProject: null,
   loading: false,
@@ -19,16 +12,16 @@ export const fetchProjects = createAsyncThunk('projects/fetchProjects', async (_
   try {
     const res = await axios.get('/api/projects');
     return res.data.projects;
-  } catch (err: any) {
+  } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch projects');
   }
 });
 
-export const fetchProjectById = createAsyncThunk('projects/fetchProjectById', async (id: string, { rejectWithValue }) => {
+export const fetchProjectById = createAsyncThunk('projects/fetchProjectById', async (id, { rejectWithValue }) => {
   try {
     const res = await axios.get(`/api/projects/${id}`);
     return res.data.project || res.data;
-  } catch (err: any) {
+  } catch (err) {
     return rejectWithValue(err.response?.data?.error || 'Failed to fetch project');
   }
 });
@@ -51,7 +44,7 @@ const projectSlice = createSlice({
         state.loading = false;
       })
       .addCase(fetchProjects.rejected, (state, action) => {
-        state.error = action.payload as string;
+        state.error = action.payload;
         state.loading = false;
       })
       .addCase(fetchProjectById.fulfilled, (state, action) => {

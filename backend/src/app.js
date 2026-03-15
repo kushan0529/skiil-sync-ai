@@ -12,10 +12,10 @@ const errorMiddleware = require('./middleware/error.middleware');
 
 const app = express();
 
-// ✅ CONNECT DB ONCE at startup (NOT middleware)
+
 connectDB(process.env.MONGO_URL);
 
-// Middleware (correct order)
+// Middlewares
 app.use(cors(/*{ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }*/));
 app.use(express.json({ limit: '8mb' }));
 

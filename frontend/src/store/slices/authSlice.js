@@ -1,15 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-interface AuthState {
-  user: any | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  loading: boolean;
-  error: string | null;
-}
-
-const initialState: AuthState = {
+const initialState = {
   user: null,
   token: localStorage.getItem('token'),
   isAuthenticated: !!localStorage.getItem('token'),
@@ -25,7 +17,7 @@ export const checkAuth = createAsyncThunk('auth/checkAuth', async (_, { rejectWi
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const res = await axios.get('/api/users/me');
     return res.data.user;
-  } catch (err: any) {
+  } catch (err) {
     localStorage.removeItem('token');
     delete axios.defaults.headers.common['Authorization'];
     return rejectWithValue(err.response?.data?.error || 'Auth check failed');
@@ -36,7 +28,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    loginSuccess: (state, action: PayloadAction<{ token: string; user: any }>) => {
+    loginSuccess: (state, action) => {
       const { token, user } = action.payload;
       state.token = token;
       state.user = user;
@@ -53,7 +45,7 @@ const authSlice = createSlice({
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
+    setLoading: (state, action) => {
       state.loading = action.payload;
     },
   },
