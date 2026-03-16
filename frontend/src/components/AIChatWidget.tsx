@@ -6,7 +6,7 @@ import axios from 'axios';
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'ai', text: 'Hi! I am your SkillSync Assistant. How can I help you today?' }
+    { role: 'ai', text: 'Hello! I am your SkillSync AI Assistant. I can help you with task breakdowns, issue descriptions, and Agile project insights. How can I assist your workflow today?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors'); 
-const connectDB = require('./config/db');  // Simple version you made
+const connectDB = require('./config/db');  
 
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
@@ -16,7 +16,8 @@ const app = express();
 connectDB(process.env.MONGO_URL);
 
 // Middlewares
-app.use(cors(/*{ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }*/));
+app.use(cors());
+
 app.use(express.json({ limit: '8mb' }));
 
 // Routes

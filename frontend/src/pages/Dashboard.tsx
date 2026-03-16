@@ -8,6 +8,7 @@ import { fetchUsers } from '../store/slices/userSlice';
 import axios from 'axios';
 import { Plus, Briefcase, CheckCircle2, Clock, Users, ArrowRight, Activity, Calendar, ListTodo, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 
 const Dashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -40,6 +41,17 @@ const Dashboard = () => {
       teamMembers: users.length || 0
     });
   }, [projects, tasks, users]);
+
+  const taskStats = [
+    { name: 'To Do', value: tasks.filter((t: any) => t.status === 'todo').length, color: '#94a3b8' },
+    { name: 'In Progress', value: tasks.filter((t: any) => t.status === 'in-progress').length, color: '#6366f1' },
+    { name: 'Completed', value: tasks.filter((t: any) => t.status === 'done').length, color: '#16a34a' }
+  ].filter(s => s.value > 0);
+
+  const projectData = projects.map(p => ({
+    name: p.name.length > 15 ? p.name.substring(0, 12) + '...' : p.name,
+    progress: p.progress || 0
+  })).slice(0, 5);
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
   const loading = projectsLoading || tasksLoading;
@@ -130,7 +142,12 @@ const Dashboard = () => {
                       </div>
                       <div>
                         <h4 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>{project.name}</h4>
-                        <p style={{ margin: 0, fontSize: '0.875rem' }}>{project.description}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.25rem' }}>
+                          <div style={{ width: '80px', height: '4px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div style={{ width: `${project.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{project.progress || 0}%</span>
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -204,6 +221,16 @@ const Dashboard = () => {
                       {task.description || 'No description provided.'}
                     </p>
 
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                        <span>Completion Progress</span>
+                        <span>{task.progress || 0}%</span>
+                      </div>
+                      <div style={{ height: '6px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+                      </div>
+                    </div>
+
                     {/* Work Logs / What he did */}
                     <div style={{ marginTop: '1rem', borderTop: '1px dashed var(--border)', paddingTop: '1rem', marginBottom: '1rem' }}>
                       <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -275,39 +302,41 @@ const Dashboard = () => {
         </div>
 
         <div>
-          <h3 style={{ marginBottom: '1.5rem' }}>Activity Feed</h3>
-          <div className="card" style={{ padding: '0' }}>
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-              <h4 style={{ fontSize: '0.875rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Today</h4>
+          <h3 style={{ marginBottom: '1.5rem' }}>Team Progress Overview</h3>
+          <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+            <h4 style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Task Status Distribution</h4>
+            <div style={{ height: '220px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={taskStats}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {taskStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div style={{ padding: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ marginTop: '0.25rem', color: 'var(--primary)' }}><Activity size={16} /></div>
-                <div>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                    <span style={{ fontWeight: 600 }}>Sarah</span> completed task <span style={{ fontWeight: 600 }}>"API Integration"</span>
-                  </p>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>2 hours ago</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ marginTop: '0.25rem', color: 'var(--success)' }}><CheckCircle2 size={16} /></div>
-                <div>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                    Project <span style={{ fontWeight: 600 }}>"Website Redesign"</span> marked as done
-                  </p>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>5 hours ago</span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ marginTop: '0.25rem', color: 'var(--primary)' }}><Plus size={16} /></div>
-                <div>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)' }}>
-                    New member <span style={{ fontWeight: 600 }}>Mike</span> joined the team
-                  </p>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Yesterday</span>
-                </div>
-              </div>
+          </div>
+
+          <div className="card" style={{ padding: '1.5rem' }}>
+            <h4 style={{ fontSize: '0.9rem', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>Project Completion (%)</h4>
+            <div style={{ height: '250px', width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projectData} layout="vertical" margin={{ left: -20, right: 30 }}>
+                  <XAxis type="number" domain={[0, 100]} hide />
+                  <YAxis type="category" dataKey="name" fontSize={12} width={100} />
+                  <Tooltip />
+                  <Bar dataKey="progress" fill="var(--primary)" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>

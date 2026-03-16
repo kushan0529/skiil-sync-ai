@@ -12,6 +12,7 @@ const TaskSchema = new mongoose.Schema({
   project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
   assignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   status: { type: String, enum: ['todo', 'in-progress', 'done'], default: 'todo' },
+  progress: { type: Number, default: 0, min: 0, max: 100 },
   preference: { type: String, enum: ['low', 'medium', 'high'], default: 'high' },
   estimatedHours: Number,
   startDate: Date,

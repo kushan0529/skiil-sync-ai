@@ -8,6 +8,9 @@ import axios from 'axios';
 import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
 import { useAuth } from '../context/AuthContext';
+import { io } from 'socket.io-client';
+
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040');
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -20,12 +23,76 @@ const ProjectDetails = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
+  const toggleTaskCompletion = async (task: any) => {
+    const isNowDone = task.status !== 'done';
+    const newStatus = isNowDone ? 'done' : 'todo';
+    const newProgress = isNowDone ? 100 : 0;
+
+    try {
+      await axios.put(`/api/tasks/${task._id}`, { status: newStatus, progress: newProgress });
+      
+      // Calculate project progress
+      const otherTasks = tasks.filter(t => t._id !== task._id);
+      const allTasks = [...otherTasks, { ...task, status: newStatus }];
+      const completedCount = allTasks.filter(t => t.status === 'done').length;
+      const totalCount = allTasks.length;
+      const projectProgress = Math.round((completedCount / totalCount) * 100);
+
+      await axios.put(`/api/projects/${id}`, { progress: projectProgress });
+      
+      if (id) {
+        dispatch(fetchTasksByProjectId(id));
+        dispatch(fetchProjectById(id));
+      }
+    } catch (err) {
+      console.error('Failed to toggle task completion');
+    }
+  };
+
+  const handleTaskProgressChange = async (taskId: string, newProgress: number) => {
+    try {
+      const payload: any = { progress: newProgress };
+      if (newProgress === 100) payload.status = 'done';
+      else if (newProgress > 0) payload.status = 'in-progress';
+      else payload.status = 'todo';
+
+      await axios.put(`/api/tasks/${taskId}`, payload);
+      if (id) dispatch(fetchTasksByProjectId(id));
+    } catch (err) {
+      console.error('Failed to update task progress');
+    }
+  };
+
+  const handleProjectProgressChange = async (newProgress: number) => {
+    try {
+      await axios.put(`/api/projects/${id}`, { progress: newProgress });
+      if (id) dispatch(fetchProjectById(id));
+    } catch (err) {
+      console.error('Failed to update project progress');
+    }
+  };
+
   useEffect(() => {
     if (id) {
       dispatch(fetchProjectById(id));
       dispatch(fetchTasksByProjectId(id));
+
+      socket.emit('joinProject', id);
+      
+      socket.on('taskUpdate', () => {
+        dispatch(fetchTasksByProjectId(id));
+      });
+
+      socket.on('projectUpdate', () => {
+        dispatch(fetchProjectById(id));
+      });
     }
     return () => {
+      if (id) {
+        socket.emit('leaveProject', id);
+        socket.off('taskUpdate');
+        socket.off('projectUpdate');
+      }
       dispatch(clearCurrentProject());
     };
   }, [id, dispatch]);
@@ -53,6 +120,7 @@ const ProjectDetails = () => {
   };
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
+  const isMember = project?.members?.some((m: any) => (m._id || m) === user?._id);
   const loading = projectLoading || tasksLoading;
 
   if (loading && !project) return (
@@ -108,20 +176,34 @@ const ProjectDetails = () => {
               {tasks.length > 0 ? (
                 tasks.map((task) => (
                   <div key={task._id} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem', border: '1px solid var(--border)', boxShadow: 'none' }}>
-                    <button style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'transform 0.2s' }} className="hover-scale">
+                    <button 
+                      onClick={() => toggleTaskCompletion(task)}
+                      style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'transform 0.2s' }} 
+                      className="hover-scale"
+                    >
                       {task.status === 'done' ? <CheckCircle2 size={28} /> : <Circle size={28} />}
                     </button>
                     <div style={{ flex: 1 }}>
-                      <h4 style={{ 
-                        fontSize: '1.125rem', 
-                        fontWeight: 600, 
-                        marginBottom: '0.4rem', 
-                        textDecoration: task.status === 'done' ? 'line-through' : 'none', 
-                        color: task.status === 'done' ? 'var(--text-muted)' : 'inherit' 
-                      }}>
-                        {task.title}
-                      </h4>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <h4 style={{ 
+                          fontSize: '1.125rem', 
+                          fontWeight: 600, 
+                          marginBottom: '0.4rem', 
+                          textDecoration: task.status === 'done' ? 'line-through' : 'none', 
+                          color: task.status === 'done' ? 'var(--text-muted)' : 'inherit' 
+                        }}>
+                          {task.title}
+                        </h4>
+                        {task.progress >= 75 && task.progress < 100 && (
+                          <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>High Progress</span>
+                        )}
+                        {task.progress === 100 && (
+                          <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'var(--success)', color: 'white' }}>
+                            <CheckCircle2 size={12} style={{ marginRight: '0.2rem' }} /> Completed
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                           <Clock size={14} />
                           Due {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}
@@ -130,6 +212,29 @@ const ProjectDetails = () => {
                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.priority === 'high' ? 'var(--error)' : task.priority === 'medium' ? 'var(--primary)' : 'var(--success)' }}></span>
                            Priority: <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{task.priority}</span>
                         </span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                           <UserPlus size={14} />
+                           Assignee: <span style={{ fontWeight: 600 }}>{task.assignee?.name || 'Unassigned'}</span>
+                        </span>
+                      </div>
+                      <div style={{ maxWidth: '200px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
+                          <span>Progress</span>
+                          <span>{task.progress || 0}%</span>
+                        </div>
+                        <div style={{ height: '4px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '0.3rem' }}>
+                          <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+                        </div>
+                        {(isManager || task.assignee?._id === user?._id) && (
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={task.progress || 0} 
+                            onChange={(e) => handleTaskProgressChange(task._id, parseInt(e.target.value))}
+                            style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                          />
+                        )}
                       </div>
                     </div>
                     {isManager && (
@@ -162,6 +267,26 @@ const ProjectDetails = () => {
               <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>Project Control</h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Overall Progress</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ flex: 1, height: '10px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div style={{ width: `${project?.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+                    </div>
+                    <span style={{ fontWeight: 700, color: 'var(--primary)', minWidth: '40px' }}>{project?.progress || 0}%</span>
+                  </div>
+                  {(isManager || isMember) && (
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={project?.progress || 0} 
+                      onChange={(e) => handleProjectProgressChange(parseInt(e.target.value))}
+                      style={{ width: '100%', marginTop: '0.75rem', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                    />
+                  )}
+                </div>
+
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Current Status</label>
                   <span className={`status-badge status-${project?.status?.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project?.status}</span>

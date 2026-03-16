@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import axios from 'axios';
-import { Plus, MoreVertical, Calendar, Briefcase } from 'lucide-react';
+import { Plus, MoreVertical, Calendar, Briefcase, UserPlus, GripVertical } from 'lucide-react';
 import CreateTaskModal from '../components/CreateTaskModal';
+import { useAuth } from '../context/AuthContext';
 
 interface Task {
   _id: string;
@@ -11,6 +12,11 @@ interface Task {
   status: string;
   deadline: string;
   priority: string;
+  progress?: number;
+  assignee?: {
+    _id: string;
+    name: string;
+  };
   project?: {
     name: string;
   };
@@ -23,6 +29,7 @@ const columns = {
 };
 
 const KanbanBoard = () => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,6 +68,31 @@ const KanbanBoard = () => {
     } catch (err) {
       console.error('Failed to update task status');
       // Revert on error
+      fetchTasks();
+    }
+  };
+
+  const handleProgressChange = async (taskId: string, newProgress: number) => {
+    // Optimistic Update
+    const updatedTasks = tasks.map(t => 
+      t._id === taskId ? { 
+        ...t, 
+        progress: newProgress, 
+        status: newProgress === 100 ? 'done' : (newProgress > 0 && t.status === 'todo' ? 'in-progress' : t.status) 
+      } : t
+    );
+    setTasks(updatedTasks);
+
+    try {
+      const payload: any = { progress: newProgress };
+      const currentTask = tasks.find(t => t._id === taskId);
+      if (newProgress === 100) payload.status = 'done';
+      else if (newProgress > 0 && currentTask?.status === 'todo') payload.status = 'in-progress';
+      else if (newProgress === 0 && currentTask?.status === 'in-progress') payload.status = 'todo';
+      
+      await axios.put(`/api/tasks/${taskId}`, payload);
+    } catch (err) {
+      console.error('Failed to update task progress');
       fetchTasks();
     }
   };
@@ -119,7 +151,6 @@ const KanbanBoard = () => {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            {...provided.dragHandleProps}
                             className="card"
                             style={{
                               marginBottom: '1rem',
@@ -130,20 +161,54 @@ const KanbanBoard = () => {
                               ...provided.draggableProps.style,
                               opacity: snapshot.isDragging ? 0.9 : 1,
                               transform: snapshot.isDragging ? `${provided.draggableProps.style?.transform} scale(1.02)` : provided.draggableProps.style?.transform,
+                              position: 'relative'
                             }}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                              <span className={`status-badge status-${task.priority}`} style={{ fontSize: '0.65rem' }}>
-                                {task.priority}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div {...provided.dragHandleProps} style={{ color: 'var(--text-muted)', cursor: 'grab', display: 'flex', alignItems: 'center' }}>
+                                  <GripVertical size={18} />
+                                </div>
+                                <span className={`status-badge status-${task.priority}`} style={{ fontSize: '0.65rem' }}>
+                                  {task.priority}
+                                </span>
+                              </div>
                               <button style={{ color: 'var(--text-muted)' }}><MoreVertical size={16} /></button>
                             </div>
                             <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', lineHeight: 1.4 }}>{task.title}</h4>
                             
+                            <div style={{ marginTop: '1rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                                <span>Progress</span>
+                                <span>{task.progress || 0}%</span>
+                              </div>
+                              <div style={{ height: '6px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '0.5rem' }}>
+                                <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
+                              </div>
+                              {(user?.role === 'manager' || user?.role === 'admin' || task.assignee?._id === user?._id) && (
+                                <input 
+                                  type="range" 
+                                  min="0" 
+                                  max="100" 
+                                  value={task.progress || 0} 
+                                  onChange={(e) => handleProgressChange(task._id, parseInt(e.target.value))}
+                                  style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onPointerDown={(e) => e.stopPropagation()}
+                                />
+
+                              )}
+                            </div>
+
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                     <Briefcase size={14} />
                                     <span style={{ fontWeight: 500 }}>{task.project?.name || 'Independent'}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <UserPlus size={14} />
+                                    <span>{task.assignee?.name || 'Unassigned'}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                     <Calendar size={14} />

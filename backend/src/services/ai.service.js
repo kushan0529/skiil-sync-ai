@@ -5,19 +5,44 @@ const client = new OpenAI({
   baseURL: 'https://api.groq.com/openai/v1'
 });
 
-// Use a more capable model for extraction tasks
+// Use a more capable model for extraction and complex reasoning
 const EXTRACTION_MODEL = 'llama-3.3-70b-versatile'; 
 const RECOMMENDATION_MODEL = 'llama-3.1-8b-instant';
+
+const JIRA_SYSTEM_PROMPT = `You are the SkillSync AI Assistant, an advanced project management intelligence similar to Jira's AI. 
+Your goal is to help users optimize their Agile workflows, manage tasks effectively, and make data-driven decisions.
+Always be professional, concise, and focused on productivity, team velocity, and skill alignment.
+When suggesting actions, explain the 'why' using project management principles (e.g., resource allocation, skill-to-task mapping, bottleneck prevention).`;
 
 async function recommendAssignees(task, users) {
   try {
     const usersText = users.map((u, idx) => `${idx}: ${u.name} - skills: ${(u.skills || []).join(', ')} - availability:${u.availabilityScore || 1}`).join('\n');
-    const prompt = `You are an assistant that suggests the best assignees for a task.\nTask title: ${task.title}\nRequired skills: ${(task.requiredSkills || []).join(', ')}\nUsers:\n${usersText}\n\nReturn ONLY a JSON array of up to 3 suggestions. Example: [ { "userIdIndex": 0, "score": 0.9, "reason": "Good match" } ]`;
+    
+    const prompt = `Task analysis for smart assignment:
+Project: ${task.project?.name || 'N/A'}
+Task Title: ${task.title}
+Required Skills: ${(task.requiredSkills || []).join(', ')}
+Priority: ${task.priority || 'Medium'}
+
+Available Resources:
+${usersText}
+
+As a Project Management Assistant, analyze the workload and skill sets to suggest the top 3 best-fit assignees.
+Consider:
+1. Skill Match: How closely do user skills align with task requirements?
+2. Availability: Prioritize users with higher availability scores.
+3. Expertise: Identify users who can drive the task to completion fastest.
+
+Return ONLY a JSON array of up to 3 suggestions. 
+Example format: [ { "userIdIndex": 0, "score": 0.95, "reason": "Expert in React with 100% availability; has completed 5 similar tasks this sprint." } ]`;
 
     const resp = await client.chat.completions.create({
       model: RECOMMENDATION_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0
+      messages: [
+        { role: 'system', content: JIRA_SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1
     });
 
     const out = resp.choices[0].message.content || '';
@@ -45,34 +70,33 @@ async function extractSkillsFromResume(text) {
   try {
     const truncatedText = text.slice(0, 10000);
     
-    const prompt = `Extract a list of technical skills from the following resume text. 
-    Focus on: Programming Languages, Frameworks, Databases, and Tools.
-    
-    Format the output as a clean JSON array of strings. 
-    Example output: ["React", "Node.js", "MongoDB", "Python"]
-    
-    Resume text:
-    ${truncatedText}`;
+    const prompt = `Identify and categorize professional technical skills from the following resume text. 
+Focus on:
+- Languages & Frameworks (e.g., Python, React, Go)
+- Infrastructure & Tools (e.g., Docker, AWS, Git)
+- Databases (e.g., PostgreSQL, Redis)
+- Methodologies (e.g., Agile, Scrum)
+
+Resume text:
+${truncatedText}
+
+Format the output as a clean JSON array of strings. Limit to 20 most relevant skills.`;
     
     const resp = await client.chat.completions.create({
       model: EXTRACTION_MODEL,
       messages: [
-        { role: 'system', content: 'You are a professional technical recruiter. Return ONLY a JSON array.' },
+        { role: 'system', content: 'You are a specialized Technical Recruiter AI. Return ONLY a JSON array.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0,
-      max_tokens: 800
+      temperature: 0
     });
 
     let out = resp.choices[0].message.content || '';
-    
-    // Clean up response: remove markdown code blocks
     if (out.includes('```')) {
       const markdownMatch = out.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (markdownMatch) out = markdownMatch[1];
     }
     
-    // Attempt to extract the first valid JSON array found in the output
     const jsonMatch = out.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
       try {
@@ -84,21 +108,7 @@ async function extractSkillsFromResume(text) {
             .slice(0, 30);
         }
       } catch (err) {
-        // If the first match fails, the model might have nested brackets or complex text. 
-        // Fallback: search for the last closing bracket if the first match was incomplete
-        try {
-          const lastBracketIndex = out.lastIndexOf(']');
-          const firstBracketIndex = out.indexOf('[');
-          if (firstBracketIndex !== -1 && lastBracketIndex !== -1 && lastBracketIndex > firstBracketIndex) {
-            const potentialJson = out.substring(firstBracketIndex, lastBracketIndex + 1);
-            let skills = JSON.parse(potentialJson);
-            if (Array.isArray(skills)) {
-              return [...new Set(skills)].map(s => String(s).trim()).filter(s => s.length > 1).slice(0, 30);
-            }
-          }
-        } catch (innerErr) {
-          console.warn('[ai] Parse error in skills extraction', err.message);
-        }
+        console.warn('[ai] Parse error in skills extraction', err.message);
       }
     }
     return [];
@@ -110,13 +120,28 @@ async function extractSkillsFromResume(text) {
 
 async function recommendProjects(user, projects) {
   try {
-    const projectsText = projects.map((p, idx) => `${idx}: ${p.name} - required skills: ${(p.requiredSkills || []).join(', ')}`).join('\n');
-    const prompt = `Match this developer to a project.\nDeveloper: ${user.name}\nSkills: ${(user.skills || []).join(', ')}\n\nProjects:\n${projectsText}\n\nReturn ONLY a JSON array of top 3: [ { "projectIdIndex": <index>, "score": <0-1>, "reason": "reason" } ]`;
+    const projectsText = projects.map((p, idx) => `${idx}: ${p.name} - required skills: ${(p.requiredSkills || []).join(', ')} - status: ${p.status}`).join('\n');
+    
+    const prompt = `Strategic Resource Allocation Analysis:
+Developer: ${user.name}
+Role: ${user.role}
+Verified Skills: ${(user.skills || []).join(', ')}
+
+Available Projects for Planning:
+${projectsText}
+
+Analyze which projects would benefit most from this developer's expertise. 
+Consider skill synergy and project priority. 
+
+Return ONLY a JSON array of top 3: [ { "projectIdIndex": <index>, "score": <0-1>, "reason": "<Detailed Jira-style explanation of why this is a good match>" } ]`;
 
     const resp = await client.chat.completions.create({
       model: RECOMMENDATION_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0
+      messages: [
+        { role: 'system', content: JIRA_SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1
     });
 
     const out = resp.choices[0].message.content || '';
@@ -135,20 +160,37 @@ async function recommendProjects(user, projects) {
 
 async function chat(message, user) {
   try {
-    const prompt = `User ${user.name} asks: ${message}\nContext: User role is ${user.role}. Skills: ${(user.skills || []).join(', ')}. Provide a helpful, concise response about task management, project suggestions, or team optimization.`;
+    const prompt = `User Context:
+Name: ${user.name}
+Role: ${user.role}
+Skills: ${(user.skills || []).join(', ')}
+
+User Request: "${message}"
+
+Respond as a Jira-like Virtual Assistant. If the user asks for:
+- Task Breakdown: Suggest 3-5 sub-tasks for a given goal.
+- Descriptions: Help draft professional issue descriptions.
+- Summarization: Summarize progress (based on what they ask).
+- General PM: Provide advice on sprints, backlogs, or blockers.
+
+Keep responses professional, helpful, and formatted for readability. Use bullet points where appropriate.`;
     
     const resp = await client.chat.completions.create({
       model: RECOMMENDATION_MODEL,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        { role: 'system', content: JIRA_SYSTEM_PROMPT },
+        { role: 'user', content: prompt }
+      ],
       temperature: 0.7,
-      max_tokens: 250
+      max_tokens: 500
     });
 
-    return resp.choices[0].message.content || "I'm sorry, I couldn't process that.";
+    return resp.choices[0].message.content || "I'm sorry, I couldn't process that request at this time.";
   } catch (err) {
     console.error('[ai] chat failed', err.message);
-    return "AI service is temporarily unavailable.";
+    return "The SkillSync AI Service is temporarily reaching its capacity. Please try again in a moment.";
   }
 }
 
 module.exports = { recommendAssignees, extractSkillsFromResume, recommendProjects, chat };
+
