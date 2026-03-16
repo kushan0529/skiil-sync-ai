@@ -291,6 +291,18 @@ const ProjectDetails = () => {
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Current Status</label>
                   <span className={`status-badge status-${project?.status?.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project?.status}</span>
                 </div>
+
+                <div className="input-group" style={{ marginBottom: 0 }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Team Members</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                    <Users size={16} className="text-muted" />
+                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>
+                      {project?.members && project.members.length > 0 
+                        ? project.members.map((m: any) => m.name).join(', ') 
+                        : 'Unassigned'}
+                    </span>
+                  </div>
+                </div>
                 
                 <div className="grid-1" style={{ gap: '1rem' }}>
                     <div>

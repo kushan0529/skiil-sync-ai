@@ -102,9 +102,11 @@ const Projects = () => {
                       <Clock size={14} />
                       Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No date'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <Users size={14} />
-                      {project.members?.length || 0} Members
+                      {project.members && project.members.length > 0 
+                        ? project.members.map((m: any) => m.name).join(', ') 
+                        : 'Unassigned'}
                     </div>
                   </div>
                 </div>
