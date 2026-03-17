@@ -242,7 +242,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                    >
                      <FileSearch size={14} /> Analyze
                    </button>
-                   {isAdmin && (
+                   {(isAdmin || currentUser?.role === 'manager') && (
                      <button 
                        onClick={() => {
                          setUserToDelete(dev);

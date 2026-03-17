@@ -41,7 +41,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
         axios.get('/api/users')
       ]);
       setProjects(projectsRes.data.projects || []);
-      setUsers(usersRes.data);
+      setUsers(usersRes.data.users || []);
     } catch (err) {
       console.error('Failed to fetch data');
     }

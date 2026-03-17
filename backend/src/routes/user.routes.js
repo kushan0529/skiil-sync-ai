@@ -12,7 +12,8 @@ const upload = multer({
 
 router.get('/me', auth, userController.getMe);
 router.get('/', auth, userController.listUsers);
+router.put('/:id/approve', auth, permit('admin'), userController.approveUser);
 router.post('/upload-resume', auth, permit('manager', 'admin'), upload.single('resume'), userController.uploadResume);
-router.delete('/:id', auth, permit('admin'), userController.deleteUser);
+router.delete('/:id', auth, permit('manager', 'admin'), userController.deleteUser);
 
 module.exports = router;

@@ -105,7 +105,7 @@ const Projects = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <Users size={14} />
                       {project.members && project.members.length > 0 
-                        ? project.members.map((m: any) => m.name).join(', ') 
+                        ? project.members.map((m: any) => (typeof m === 'object' ? m.name : 'User')).filter(Boolean).join(', ') 
                         : 'Unassigned'}
                     </div>
                   </div>

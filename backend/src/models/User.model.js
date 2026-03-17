@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['admin', 'manager', 'member'], default: 'member' },
   skills: [{ type: String }],
   resumeUrl: { type: String },
-  availabilityScore: { type: Number, default: 1 }
+  availabilityScore: { type: Number, default: 1 },
+  isApproved: { type: Boolean, default: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

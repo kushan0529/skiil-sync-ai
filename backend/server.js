@@ -13,9 +13,6 @@ const io = new Server(server, {
 
 app.set('io', io);
 
-app.get('/', (req, res) => {
-  res.json({ message: 'Skill Sync AI Backend is running!' });
-});
 
 
 io.on('connection', (socket) => {

@@ -21,7 +21,7 @@ exports.listTasks = async (req, res, next) => {
       query.assignee = req.user._id;
     }
     const tasks = await Task.find(query).populate('project', 'name').populate('assignee', 'name');
-    res.json(tasks);
+    res.json({ tasks });
   } catch (err) {
     next(err);
   }
@@ -60,7 +60,7 @@ exports.updateTask = async (req, res, next) => {
 exports.listByProject = async (req, res, next) => {
   try {
     const tasks = await Task.find({ project: req.params.projectId }).populate('assignee', 'name');
-    res.json(tasks);
+    res.json({ tasks });
   } catch (err) {
     next(err);
   }

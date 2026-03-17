@@ -22,6 +22,11 @@ exports.register = async (req, res, next) => {
     const hashed = await bcrypt.hash(password, 10);
     const role = req.body.role || 'member';
     
+    let isApproved = true;
+    if (role === 'manager') {
+      isApproved = false;
+    }
+
     if (role === 'admin') {
       const adminCount = await User.countDocuments({ role: 'admin' });
       if (adminCount >= 2) {
@@ -29,13 +34,14 @@ exports.register = async (req, res, next) => {
       }
     }
 
-    const user = await User.create({ name, email, password: hashed, role });
+    const user = await User.create({ name, email, password: hashed, role, isApproved });
   
     const token = signToken({ id: user._id });
     
     res.json({ 
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
-      token 
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, isApproved: user.isApproved },
+      token,
+      message: role === 'manager' ? 'Registration successful. Please wait for admin approval.' : undefined
     });
   } catch (err) {
     next(err);
@@ -54,6 +60,10 @@ exports.login = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
     
+    if (!user.isApproved) {
+      return res.status(403).json({ error: 'Your account is pending administrator approval.' });
+    }
+    
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
       return res.status(400).json({ error: 'Invalid password' });
@@ -61,7 +71,7 @@ exports.login = async (req, res, next) => {
     
     const token = signToken({ id: user._id });
     res.json({ 
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }, 
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, isApproved: user.isApproved }, 
       token 
     });
   } catch (err) {

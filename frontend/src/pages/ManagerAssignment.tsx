@@ -28,6 +28,26 @@ const ManagerAssignment = () => {
   const [projectToAssign, setProjectToAssign] = useState<any>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
+  // Manager approval state
+  const { users } = useSelector((state: RootState) => state.users);
+  const pendingManagers = users.filter((u: any) => u.role === 'manager' && !u.isApproved);
+
+  const handleApproveManager = async (userId: string) => {
+    try {
+      await axios.put(`/api/users/${userId}/approve`);
+      setSuccessMessage('Manager account approved successfully.');
+      dispatch(fetchProjects());
+      // Re-fetch users to update the list
+      const usersRes = await axios.get('/api/users');
+      // Since we don't have a global fetchUsers thunk that's easily accessible here without more changes, 
+      // we'll just rely on the fact that the next time it's needed it will be fresh or we can trigger it.
+      // Better: use the userSlice thunk if available
+      window.location.reload(); // Simple way to refresh all data for now
+    } catch (err) {
+      console.error('Failed to approve manager');
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchProjects());
   }, [dispatch]);
@@ -103,6 +123,32 @@ const ManagerAssignment = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }} />
       </div>
+
+      {user?.role === 'admin' && pendingManagers.length > 0 && (
+        <div className="card" style={{ marginBottom: '3rem', border: '2px solid #f59e0b', background: 'rgba(245, 158, 11, 0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <AlertTriangle size={24} color="#f59e0b" />
+            <h3 style={{ margin: 0, color: '#b45309' }}>Pending Manager Approvals</h3>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {pendingManagers.map((m: any) => (
+              <div key={m._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '1rem', borderRadius: '12px', border: '1px solid #fbbf24' }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{m.name}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{m.email}</div>
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ background: '#f59e0b', border: 'none' }}
+                  onClick={() => handleApproveManager(m._id)}
+                >
+                  Approve Manager
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ padding: '2rem', boxShadow: 'var(--shadow-md)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>

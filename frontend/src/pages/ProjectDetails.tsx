@@ -293,14 +293,30 @@ const ProjectDetails = () => {
                 </div>
 
                 <div className="input-group" style={{ marginBottom: 0 }}>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Team Members</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
-                    <Users size={16} className="text-muted" />
-                    <span style={{ fontSize: '0.95rem', fontWeight: 500 }}>
-                      {project?.members && project.members.length > 0 
-                        ? project.members.map((m: any) => m.name).join(', ') 
-                        : 'Unassigned'}
-                    </span>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '1rem', letterSpacing: '0.05em' }}>Team Members ({project?.members?.length || 0})</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {project?.members && project.members.length > 0 ? (
+                      project.members.map((member: any) => (
+                        <div key={member._id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700 }}>
+                            {member.name.charAt(0)}
+                          </div>
+                          <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{member.role}</div>
+                          </div>
+                          {member.skills && member.skills.length > 0 && (
+                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                               <span title={member.skills.join(', ')} style={{ cursor: 'help' }}>
+                                 <Sparkles size={14} style={{ color: 'var(--primary)', opacity: 0.7 }} />
+                               </span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '0.5rem' }}>No members assigned yet.</div>
+                    )}
                   </div>
                 </div>
                 

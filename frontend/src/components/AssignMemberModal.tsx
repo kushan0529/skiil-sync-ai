@@ -28,7 +28,7 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, onSucce
   const fetchUsers = async () => {
     try {
       const res = await axios.get('/api/users');
-      setUsers(res.data);
+      setUsers(res.data.users || []);
     } catch (err) {
       console.error('Failed to fetch users');
     }
