@@ -21,7 +21,8 @@ const MemberAssignmentDetail = () => {
   const fetchMember = async () => {
     try {
       const res = await axios.get('/api/users');
-      const allUsers = Array.isArray(res.data) ? res.data : [];
+      // Backend returns { users: [...] }
+      const allUsers = Array.isArray(res.data.users) ? res.data.users : Array.isArray(res.data) ? res.data : [];
       const found = allUsers.find((u: any) => u._id === userId);
       if (found) {
         setMember(found);
@@ -78,8 +79,11 @@ const MemberAssignmentDetail = () => {
       await axios.put(`/api/projects/${projectId}`, { 
         $addToSet: { members: userId } 
       });
-      setMessage('Member assigned successfully!');
-      setTimeout(() => navigate('/manager'), 2000);
+      
+      const projectName = recommendations.find(r => r.project._id === projectId)?.project.name || 'Project';
+      setMessage(`The project "${projectName}" has been successfully assigned to ${member?.name}.`);
+      
+      setTimeout(() => navigate('/manager'), 3000);
     } catch (err) {
       setMessage('Failed to assign member');
     } finally {
@@ -177,33 +181,63 @@ const MemberAssignmentDetail = () => {
               </div>
             ) : recommendations.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {recommendations.map((rec, i) => (
-                  <div key={i} className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ padding: '0.5rem', background: 'white', borderRadius: '8px', color: 'var(--primary)' }}>
-                          <Briefcase size={18} />
-                        </div>
-                        <div>
-                          <h4 style={{ margin: 0 }}>{rec.project.name}</h4>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
-                            Match Score: <span style={{ color: 'var(--success)', fontWeight: 700 }}>{Math.round(rec.score * 100)}%</span>
+                {recommendations.map((rec, i) => {
+                  const projectSkills = rec.project.requiredSkills || [];
+                  const memberSkills = member?.skills || [];
+                  
+                  return (
+                    <div key={i} className="card" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '1.25rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{ padding: '0.5rem', background: 'white', borderRadius: '8px', color: 'var(--primary)' }}>
+                            <Briefcase size={18} />
+                          </div>
+                          <div>
+                            <h4 style={{ margin: 0 }}>{rec.project.name}</h4>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.125rem' }}>
+                              Match Score: <span style={{ color: 'var(--success)', fontWeight: 700 }}>{Math.round(rec.score * 100)}%</span>
+                            </div>
                           </div>
                         </div>
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => handleAssign(rec.project._id)}
+                          disabled={assigning}
+                        >
+                          {assigning ? 'Assigning...' : 'Confirm to Assign'}
+                        </button>
                       </div>
-                      <button 
-                        className="btn btn-primary btn-sm"
-                        onClick={() => handleAssign(rec.project._id)}
-                        disabled={assigning}
-                      >
-                        {assigning ? 'Assigning...' : 'Confirm to Assign'}
-                      </button>
+
+                      <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Skills Required / Matched</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {projectSkills.map((ps: string) => {
+                            const isMatch = memberSkills.some((ms: string) => ms.toLowerCase() === ps.toLowerCase());
+                            return (
+                              <span 
+                                key={ps} 
+                                className="status-badge" 
+                                style={{ 
+                                  background: isMatch ? 'var(--success)' : 'white', 
+                                  color: isMatch ? 'white' : 'var(--text-main)',
+                                  border: isMatch ? 'none' : '1px solid var(--border)',
+                                  fontWeight: isMatch ? 700 : 400
+                                }}
+                              >
+                                {ps}
+                                {isMatch && <Check size={12} style={{ marginLeft: '4px', display: 'inline' }} />}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: 0, lineBreak: 'anywhere' }}>
+                        <strong>AI Logic:</strong> {rec.reason}
+                      </p>
                     </div>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: 0, lineBreak: 'anywhere' }}>
-                      <strong>AI Logic:</strong> {rec.reason}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>

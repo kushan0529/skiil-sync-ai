@@ -6,11 +6,13 @@ export interface Task {
   title: string;
   description: string;
   status: 'todo' | 'in-progress' | 'done';
-  priority: 'low' | 'medium' | 'high';
-  project: any;
-  assignee: any;
+  preference: 'low' | 'medium' | 'high';
+  project?: any;
+  assignee?: any;
   progress: number;
+  startDate?: string;
   deadline?: string;
+  workLogs?: any[];
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +49,33 @@ export const fetchTasksByProjectId = createAsyncThunk('tasks/fetchTasksByProject
   }
 });
 
+export const createTask = createAsyncThunk('tasks/createTask', async (taskData: any, { rejectWithValue }) => {
+  try {
+    const res = await axios.post('/api/tasks', taskData);
+    return res.data.task as Task;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to create task');
+  }
+});
+
+export const updateTask = createAsyncThunk('tasks/updateTask', async ({ taskId, taskData }: { taskId: string; taskData: any }, { rejectWithValue }) => {
+  try {
+    const res = await axios.put(`/api/tasks/${taskId}`, taskData);
+    return res.data.task as Task;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to update task');
+  }
+});
+
+export const deleteTask = createAsyncThunk('tasks/deleteTask', async (taskId: string, { rejectWithValue }) => {
+  try {
+    await axios.delete(`/api/tasks/${taskId}`);
+    return taskId;
+  } catch (err: any) {
+    return rejectWithValue(err.response?.data?.error || 'Failed to delete task');
+  }
+});
+
 const taskSlice = createSlice({
   name: 'tasks',
   initialState,
@@ -62,13 +91,13 @@ const taskSlice = createSlice({
       const { taskId, log } = action.payload;
       const task = state.tasks.find(t => t._id === taskId);
       if (task) {
-        if (!task.workLogs) (task as any).workLogs = [];
-        (task as any).workLogs.push(log);
+        if (!task.workLogs) task.workLogs = [];
+        task.workLogs.push(log);
       }
       const projectTask = state.projectTasks.find(t => t._id === taskId);
       if (projectTask) {
-        if (!(projectTask as any).workLogs) (projectTask as any).workLogs = [];
-        (projectTask as any).workLogs.push(log);
+        if (!projectTask.workLogs) projectTask.workLogs = [];
+        projectTask.workLogs.push(log);
       }
     },
   },
@@ -87,6 +116,20 @@ const taskSlice = createSlice({
       .addCase(fetchTasksByProjectId.fulfilled, (state, action: PayloadAction<Task[]>) => {
         state.projectTasks = action.payload;
         state.loading = false;
+      })
+      .addCase(createTask.fulfilled, (state, action: PayloadAction<Task>) => {
+        state.tasks.unshift(action.payload);
+      })
+      .addCase(updateTask.fulfilled, (state, action: PayloadAction<Task>) => {
+        const index = state.tasks.findIndex(t => t._id === action.payload._id);
+        if (index !== -1) state.tasks[index] = action.payload;
+        
+        const projectIndex = state.projectTasks.findIndex(t => t._id === action.payload._id);
+        if (projectIndex !== -1) state.projectTasks[projectIndex] = action.payload;
+      })
+      .addCase(deleteTask.fulfilled, (state, action: PayloadAction<string>) => {
+        state.tasks = state.tasks.filter(t => t._id !== action.payload);
+        state.projectTasks = state.projectTasks.filter(t => t._id !== action.payload);
       });
   },
 });

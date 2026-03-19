@@ -2,20 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Sparkles, AlertCircle, User, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Sparkles, AlertCircle, User, CheckCircle2, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 const AuthPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
-  // Determine initial mode based on path
   const [isLogin, setIsLogin] = useState(location.pathname !== '/register');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Form States
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -25,10 +24,15 @@ const AuthPage = () => {
     setIsLogin(location.pathname !== '/register');
     setError('');
     setSuccess('');
+    setShowPassword(false);
   }, [location.pathname]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -36,7 +40,7 @@ const AuthPage = () => {
       login(res.data.token, res.data.user);
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Authentication failed');
+      setError(err.response?.data?.error || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -44,20 +48,23 @@ const AuthPage = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password || (!isLogin && !name)) {
+      setError('Please fill in all required fields');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       await axios.post('/api/auth/register', { name, email, password, role });
-      
       if (role === 'manager') {
-        setSuccess('Manager account created! Pending admin approval.');
-        setTimeout(() => setIsLogin(true), 4000);
+        setSuccess('Manager account created! Your account is pending administrator approval.');
+        setTimeout(() => navigate('/login'), 5000);
       } else {
-        setSuccess('Account created! You can now sign in.');
-        setTimeout(() => setIsLogin(true), 2000);
+        setSuccess('Account successfully created! You can now sign in.');
+        setTimeout(() => setIsLogin(true), 2500);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.response?.data?.error || 'Registration failed. This email might already be in use.');
     } finally {
       setLoading(false);
     }
@@ -65,225 +72,180 @@ const AuthPage = () => {
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.15), transparent), #0f172a',
-      padding: '2rem',
-      fontFamily: "'Inter', sans-serif"
+      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: '#0a0a0c', overflow: 'hidden', position: 'relative', padding: '1.5rem'
     }}>
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '450px', 
-        background: 'rgba(30, 41, 59, 0.7)', 
-        backdropFilter: 'blur(20px)',
-        borderRadius: '28px',
-        padding: '2.5rem',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Animated Background Element */}
-        <div style={{
-          position: 'absolute',
-          top: '-50px',
-          right: '-50px',
-          width: '150px',
-          height: '150px',
-          background: 'linear-gradient(135deg, var(--primary), #a855f7)',
-          filter: 'blur(60px)',
-          opacity: 0.2,
-          zIndex: 0
-        }} />
-
-        {/* Sliding Toggle Bar */}
+      {/* --- REFINED BACKGROUND --- */}
+      <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+        {/* Subtler Animated Blobs */}
+        <div className="blob blob-1" />
+        <div className="blob blob-2" />
+        
+        {/* Professional Grid Overlay */}
         <div style={{ 
-          background: 'rgba(15, 23, 42, 0.5)', 
-          borderRadius: '16px', 
-          padding: '4px', 
-          display: 'flex', 
-          marginBottom: '2.5rem',
-          position: 'relative',
-          border: '1px solid rgba(255, 255, 255, 0.05)'
-        }}>
+          position: 'absolute', inset: 0, 
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+          maskImage: 'radial-gradient(circle at center, black, transparent 90%)'
+        }} />
+        
+        {/* Bottom Glow */}
+        <div style={{
+          position: 'absolute', bottom: '-20%', left: '50%', transform: 'translateX(-50%)',
+          width: '80%', height: '40%', background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.15), transparent 70%)',
+          filter: 'blur(50px)', pointerEvents: 'none'
+        }} />
+      </div>
+
+      <style>{`
+        @keyframes float {
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(2vw, -2vh) scale(1.05); }
+          100% { transform: translate(0, 0) scale(1); }
+        }
+        .blob {
+          position: absolute; width: 40vmax; height: 40vmax;
+          border-radius: 50%; filter: blur(100px); opacity: 0.1;
+          animation: float 25s infinite alternate ease-in-out;
+        }
+        .blob-1 { background: #4f46e5; top: -5%; left: -5%; animation-delay: 0s; }
+        .blob-2 { background: #7c3aed; bottom: -5%; right: -5%; animation-delay: -5s; }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%) rotate(30deg); }
+          100% { transform: translateX(250%) rotate(30deg); }
+        }
+        .shimmer-card::before {
+          content: ""; position: absolute; top: 0; left: 0; width: 30%; height: 100%;
+          background: linear-gradient(to right, transparent, rgba(255,255,255,0.03), transparent);
+          animation: shimmer 6s infinite linear;
+        }
+        
+        .input-focus:focus-within {
+          border-color: rgba(99, 102, 241, 0.5) !important;
+          background: rgba(255,255,255,0.05) !important;
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+        .btn-glow:hover { 
+          box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); 
+          transform: translateY(-1px);
+          background: #fdfdfd !important;
+        }
+        .btn-glow:active { transform: translateY(0); }
+      `}</style>
+
+      {/* --- AUTH CARD --- */}
+      <div className="shimmer-card" style={{ 
+        width: '100%', maxWidth: '440px', background: 'rgba(15, 15, 18, 0.7)', 
+        backdropFilter: 'blur(30px)', borderRadius: '28px', padding: '3.5rem 2.5rem',
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 40px 80px -20px rgba(0,0,0,0.8)',
+        position: 'relative', zIndex: 1, overflow: 'hidden',
+        border: '1px solid rgba(255,255,255,0.05)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <div style={{ 
-            position: 'absolute',
-            left: isLogin ? '4px' : '50%',
-            width: 'calc(50% - 4px)',
-            height: 'calc(100% - 8px)',
-            background: 'linear-gradient(135deg, var(--primary), #a855f7)',
-            borderRadius: '12px',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
-          }} />
-          <button 
-            onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }}
-            style={{ 
-              flex: 1, 
-              padding: '12px', 
-              border: 'none', 
-              background: 'transparent', 
-              color: isLogin ? 'white' : 'rgba(255,255,255,0.5)', 
-              fontWeight: 700, 
-              zIndex: 1, 
-              cursor: 'pointer',
-              transition: 'color 0.3s'
-            }}
-          >
-            Sign In
-          </button>
-          <button 
-            onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }}
-            style={{ 
-              flex: 1, 
-              padding: '12px', 
-              border: 'none', 
-              background: 'transparent', 
-              color: !isLogin ? 'white' : 'rgba(255,255,255,0.5)', 
-              fontWeight: 700, 
-              zIndex: 1, 
-              cursor: 'pointer',
-              transition: 'color 0.3s'
-            }}
-          >
-            Register
-          </button>
+            width: '64px', height: '64px', background: 'linear-gradient(145deg, #6366f1, #818cf8)', 
+            borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.5rem', color: 'white', position: 'relative',
+            boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.5)'
+          }}>
+            <Sparkles size={32} />
+          </div>
+          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem', letterSpacing: '-0.04em' }}>
+            {isLogin ? 'Welcome Back' : 'Get Started'}
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.95rem', fontWeight: 400 }}>
+            {isLogin ? 'SkillSync AI: Your intelligence-driven workspace' : 'Create your account to join the talent network'}
+          </p>
         </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.95rem' }}>
-            {isLogin ? 'Access your SkillSync dashboard' : 'Join our professional talent network'}
-          </p>
+        {/* Professional Sliding Toggle */}
+        <div style={{ 
+          background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '4px', 
+          display: 'flex', marginBottom: '2.5rem', border: '1px solid rgba(255,255,255,0.06)'
+        }}>
+          <button onClick={() => { setIsLogin(true); navigate('/login'); }} style={{ 
+            flex: 1, padding: '12px', border: 'none', borderRadius: '12px',
+            background: isLogin ? 'white' : 'transparent',
+            color: isLogin ? '#0a0a0c' : 'rgba(255,255,255,0.4)', 
+            fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>Sign In</button>
+          <button onClick={() => { setIsLogin(false); navigate('/register'); }} style={{ 
+            flex: 1, padding: '12px', border: 'none', borderRadius: '12px',
+            background: !isLogin ? 'white' : 'transparent',
+            color: !isLogin ? '#0a0a0c' : 'rgba(255,255,255,0.4)', 
+            fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>Register</button>
         </div>
 
         <form onSubmit={isLogin ? handleLogin : handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
-            <div className="fade-in" style={{ 
-              padding: '0.875rem', 
-              background: 'rgba(239, 68, 68, 0.15)', 
-              color: '#fca5a5', 
-              borderRadius: '12px', 
-              fontSize: '0.85rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              border: '1px solid rgba(239, 68, 68, 0.2)'
-            }}>
-              <AlertCircle size={16} /> {error}
+            <div className="fade-in" style={{ color: '#fca5a5', fontSize: '0.875rem', textAlign: 'left', background: 'rgba(239, 68, 68, 0.08)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <AlertCircle size={18} />
+              {error}
             </div>
           )}
-
           {success && (
-            <div className="fade-in" style={{ 
-              padding: '0.875rem', 
-              background: 'rgba(34, 197, 94, 0.15)', 
-              color: '#86efac', 
-              borderRadius: '12px', 
-              fontSize: '0.85rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              border: '1px solid rgba(34, 197, 94, 0.2)'
-            }}>
-              <CheckCircle2 size={16} /> {success}
+            <div className="fade-in" style={{ color: '#86efac', fontSize: '0.875rem', textAlign: 'left', background: 'rgba(34, 197, 94, 0.08)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(34, 197, 94, 0.15)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <CheckCircle2 size={18} />
+              {success}
             </div>
           )}
 
           {!isLogin && (
-            <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-              <input 
-                type="text" 
-                placeholder="Full Name" 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={{ 
-                  width: '100%', padding: '12px 12px 12px 2.75rem', background: 'rgba(15, 23, 42, 0.3)', 
-                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none'
-                }} 
-              />
+            <div className="input-focus" style={{ position: 'relative', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', transition: 'all 0.3s' }}>
+              <User size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)' }} />
+              <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required 
+                style={{ width: '100%', padding: '14px 14px 14px 3.25rem', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.95rem' }} />
             </div>
           )}
 
-          <div style={{ position: 'relative' }}>
-            <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-            <input 
-              type="email" 
-              placeholder="Email Address" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ 
-                width: '100%', padding: '12px 12px 12px 2.75rem', background: 'rgba(15, 23, 42, 0.3)', 
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none'
-              }} 
-            />
+          <div className="input-focus" style={{ position: 'relative', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', transition: 'all 0.3s' }}>
+            <Mail size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)' }} />
+            <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} required 
+              style={{ width: '100%', padding: '14px 14px 14px 3.25rem', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.95rem' }} />
           </div>
 
-          <div style={{ position: 'relative' }}>
-            <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)' }} />
-            <input 
-              type="password" 
-              placeholder="Password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ 
-                width: '100%', padding: '12px 12px 12px 2.75rem', background: 'rgba(15, 23, 42, 0.3)', 
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none'
-              }} 
-            />
+          <div className="input-focus" style={{ position: 'relative', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', transition: 'all 0.3s' }}>
+            <Lock size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)' }} />
+            <input type={showPassword ? "text" : "password"} placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required 
+              style={{ width: '100%', padding: '14px 4rem 14px 3.25rem', background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.95rem' }} />
+            <button 
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.3)', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
 
           {!isLogin && (
-            <div style={{ position: 'relative' }}>
-              <select 
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={{ 
-                  width: '100%', padding: '12px', background: 'rgba(15, 23, 42, 0.3)', 
-                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'white', outline: 'none',
-                  appearance: 'none', cursor: 'pointer'
-                }}
-              >
+            <div className="input-focus" style={{ position: 'relative', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', transition: 'all 0.3s' }}>
+              <ShieldCheck size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.25)' }} />
+              <select value={role} onChange={(e) => setRole(e.target.value)} 
+                style={{ width: '100%', padding: '14px 14px 14px 3.25rem', background: 'transparent', border: 'none', color: 'white', outline: 'none', appearance: 'none', fontSize: '0.95rem', cursor: 'pointer' }}>
                 <option value="member" style={{ background: '#1e293b' }}>Developer Member</option>
                 <option value="manager" style={{ background: '#1e293b' }}>Project Manager</option>
                 <option value="admin" style={{ background: '#1e293b' }}>Administrator</option>
               </select>
+              <div style={{ position: 'absolute', right: '1.25rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(255,255,255,0.3)' }} />
             </div>
           )}
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={{ 
-              width: '100%', padding: '14px', background: 'linear-gradient(135deg, var(--primary), #a855f7)', 
-              border: 'none', borderRadius: '12px', color: 'white', fontWeight: 700, fontSize: '1rem',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
-              boxShadow: '0 10px 20px -5px rgba(99, 102, 241, 0.4)', transition: 'transform 0.2s'
-            }}
-          >
+          <button type="submit" disabled={loading} className="btn-glow" style={{ 
+            width: '100%', padding: '16px', background: 'white', color: '#0a0a0c', border: 'none', borderRadius: '14px', 
+            fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', marginTop: '1rem'
+          }}>
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
-            {!loading && <ArrowRight size={18} />}
+            {!loading && <ArrowRight size={20} />}
           </button>
         </form>
 
-        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.875rem' }}>
-            {isLogin ? "Don't have an account?" : "Already have an account?"} 
-            <button 
-              onClick={() => setIsLogin(!isLogin)}
-              style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 700, marginLeft: '0.5rem', cursor: 'pointer' }}
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </p>
+        <div style={{ marginTop: '3.5rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '2rem' }}>
+           <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.1em' }}>
+             SKILLSYNC <span style={{ color: '#6366f1' }}>CORE AI</span> v2.0
+           </p>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import axios from 'axios';
-import { PlusCircle, Trash2, Calendar, Users, FileText, Type } from 'lucide-react';
+import { PlusCircle, Trash2, Calendar, Users, FileText, Type, X } from 'lucide-react';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -16,9 +16,11 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
     startDate: '',
     deadline: '',
     members: [] as string[],
+    requiredSkills: [] as string[],
     tasks: [] as { title: string; description: string; deadline: string }[]
   });
-  const [users, setUsers] = useState<any[]>([]);
+  const [skillInput, setSkillInput] = useState('');
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,10 +33,22 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
   const fetchUsers = async () => {
     try {
       const res = await axios.get('/api/users');
-      setUsers(res.data);
+      // Backend returns { users: [...] }
+      setUsers(Array.isArray(res.data.users) ? res.data.users : Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch users');
     }
+  };
+
+  const addSkill = () => {
+    if (skillInput.trim() && !formData.requiredSkills.includes(skillInput.trim())) {
+      setFormData(prev => ({ ...prev, requiredSkills: [...prev.requiredSkills, skillInput.trim()] }));
+      setSkillInput('');
+    }
+  };
+
+  const removeSkill = (skill: string) => {
+    setFormData(prev => ({ ...prev, requiredSkills: prev.requiredSkills.filter(s => s !== skill) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,6 +66,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
         startDate: '', 
         deadline: '', 
         members: [], 
+        requiredSkills: [],
         tasks: [] 
       });
     } catch (err: any) {
@@ -151,6 +166,31 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProjectModalPr
                 required
                 style={{ padding: '0.75rem' }}
               />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
+              <PlusCircle size={16} /> Required Skills
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input 
+                type="text" 
+                value={skillInput} 
+                onChange={(e) => setSkillInput(e.target.value)} 
+                placeholder="e.g. React, Python..."
+                style={{ padding: '0.75rem', flex: 1 }}
+                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+              />
+              <button type="button" onClick={addSkill} className="btn btn-outline">Add</button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {formData.requiredSkills.map(skill => (
+                <span key={skill} className="status-badge" style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  {skill}
+                  <X size={12} style={{ cursor: 'pointer' }} onClick={() => removeSkill(skill)} />
+                </span>
+              ))}
             </div>
           </div>
 

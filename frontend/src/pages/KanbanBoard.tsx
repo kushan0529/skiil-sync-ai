@@ -1,26 +1,11 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import axios from 'axios';
 import { Plus, MoreVertical, Calendar, Briefcase, UserPlus, GripVertical } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../store';
+import { fetchAllTasks, updateTask } from '../store/slices/taskSlice';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { useAuth } from '../context/AuthContext';
-
-interface Task {
-  _id: string;
-  title: string;
-  description: string;
-  status: string;
-  deadline: string;
-  priority: string;
-  progress?: number;
-  assignee?: {
-    _id: string;
-    name: string;
-  };
-  project?: {
-    name: string;
-  };
-}
 
 const columns = {
   'todo': { title: 'To Do', color: 'var(--text-muted)' },
@@ -30,74 +15,44 @@ const columns = {
 
 const KanbanBoard = () => {
   const { user } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { tasks, loading } = useSelector((state: RootState) => state.tasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
-  }, []);
+    dispatch(fetchAllTasks());
+  }, [dispatch]);
 
-  const fetchTasks = async () => {
-    try {
-      const tasksRes = await axios.get('/api/tasks');
-      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : []);
-    } catch (err) {
-      console.error('Failed to fetch tasks');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onDragEnd = async (result: DropResult) => {
+  const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const { source, destination, draggableId } = result;
-
     if (source.droppableId === destination.droppableId) return;
 
-    // Optimistic Update
-    const newStatus = destination.droppableId;
-    const updatedTasks = tasks.map(t => 
-      t._id === draggableId ? { ...t, status: newStatus } : t
-    );
-    setTasks(updatedTasks);
-
-    try {
-      await axios.put(`/api/tasks/${draggableId}`, { status: newStatus });
-    } catch (err) {
-      console.error('Failed to update task status');
-      // Revert on error
-      fetchTasks();
-    }
+    const newStatus = destination.droppableId as 'todo' | 'in-progress' | 'done';
+    
+    dispatch(updateTask({ 
+      taskId: draggableId, 
+      taskData: { status: newStatus } 
+    }));
   };
 
-  const handleProgressChange = async (taskId: string, newProgress: number) => {
-    // Optimistic Update
-    const updatedTasks = tasks.map(t => 
-      t._id === taskId ? { 
-        ...t, 
-        progress: newProgress, 
-        status: newProgress === 100 ? 'done' : (newProgress > 0 && t.status === 'todo' ? 'in-progress' : t.status) 
-      } : t
-    );
-    setTasks(updatedTasks);
+  const handleProgressChange = (taskId: string, newProgress: number) => {
+    const currentTask = tasks.find(t => t._id === taskId);
+    if (!currentTask) return;
 
-    try {
-      const payload: any = { progress: newProgress };
-      const currentTask = tasks.find(t => t._id === taskId);
-      if (newProgress === 100) payload.status = 'done';
-      else if (newProgress > 0 && currentTask?.status === 'todo') payload.status = 'in-progress';
-      else if (newProgress === 0 && currentTask?.status === 'in-progress') payload.status = 'todo';
-      
-      await axios.put(`/api/tasks/${taskId}`, payload);
-    } catch (err) {
-      console.error('Failed to update task progress');
-      fetchTasks();
-    }
+    let newStatus = currentTask.status;
+    if (newProgress === 100) newStatus = 'done';
+    else if (newProgress > 0 && currentTask.status === 'todo') newStatus = 'in-progress';
+    else if (newProgress === 0 && currentTask.status === 'in-progress') newStatus = 'todo';
+
+    dispatch(updateTask({ 
+      taskId, 
+      taskData: { progress: newProgress, status: newStatus } 
+    }));
   };
 
-  if (loading) return (
+  if (loading && tasks.length === 0) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
       <div className="loading-spinner"></div>
     </div>
@@ -212,7 +167,7 @@ const KanbanBoard = () => {
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                     <Calendar size={14} />
-                                    <span>{new Date(task.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                    <span>{task.deadline ? new Date(task.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'No deadline'}</span>
                                 </div>
                             </div>
                           </div>
@@ -231,7 +186,6 @@ const KanbanBoard = () => {
       <CreateTaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={() => fetchTasks()}
       />
     </div>
   );

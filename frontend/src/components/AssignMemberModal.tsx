@@ -8,10 +8,11 @@ interface AssignMemberModalProps {
   onClose: () => void;
   projectId: string;
   currentMembers: any[];
+  requiredSkills?: string[];
   onSuccess: (message: string) => void;
 }
 
-const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, onSuccess }: AssignMemberModalProps) => {
+const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, requiredSkills = [], onSuccess }: AssignMemberModalProps) => {
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,8 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, onSucce
   const fetchUsers = async () => {
     try {
       const res = await axios.get('/api/users');
-      setUsers(res.data.users || []);
+      // Backend returns { users: [...] }
+      setUsers(Array.isArray(res.data.users) ? res.data.users : Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch users');
     }
@@ -81,45 +83,60 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, onSucce
           />
         </div>
 
-        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-secondary)', padding: '0.5rem' }}>
+        <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-secondary)', padding: '0.5rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {filteredUsers.map(user => (
-              <div 
-                key={user._id} 
-                onClick={() => toggleMember(user._id)}
-                style={{ 
-                  padding: '0.75rem 1rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '1rem',
-                  cursor: 'pointer',
-                  background: selectedMembers.includes(user._id) ? 'var(--primary)' : 'var(--bg)',
-                  color: selectedMembers.includes(user._id) ? 'white' : 'inherit',
-                  borderRadius: 'var(--radius)',
-                  transition: 'all 0.2s',
-                  border: `1px solid ${selectedMembers.includes(user._id) ? 'var(--primary)' : 'var(--border)'}`
-                }}
-              >
-                <div style={{ 
-                  width: '32px', 
-                  height: '32px', 
-                  borderRadius: '50%', 
-                  background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  fontWeight: 700
-                }}>
-                  {user.name.charAt(0)}
+            {filteredUsers.map(user => {
+              const matchedSkills = (user.skills || []).filter((s: string) => 
+                requiredSkills.some(rs => rs.toLowerCase() === s.toLowerCase())
+              );
+              
+              return (
+                <div 
+                  key={user._id} 
+                  onClick={() => toggleMember(user._id)}
+                  style={{ 
+                    padding: '1rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem',
+                    cursor: 'pointer',
+                    background: selectedMembers.includes(user._id) ? 'var(--primary)' : 'var(--bg)',
+                    color: selectedMembers.includes(user._id) ? 'white' : 'inherit',
+                    borderRadius: 'var(--radius)',
+                    transition: 'all 0.2s',
+                    border: `1px solid ${selectedMembers.includes(user._id) ? 'var(--primary)' : 'var(--border)'}`
+                  }}
+                >
+                  <div style={{ 
+                    width: '40px', 
+                    height: '40px', 
+                    borderRadius: '50%', 
+                    background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1rem',
+                    fontWeight: 700
+                  }}>
+                    {user.name.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{user.name}</div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '0.5rem' }}>{user.role}</div>
+                    {matchedSkills.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                        {matchedSkills.map((s: string) => (
+                          <span key={s} style={{ fontSize: '0.65rem', background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--success)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {selectedMembers.includes(user._id) && <CheckCircle2 size={24} />}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.name}</div>
-                  <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{user.role}</div>
-                </div>
-                {selectedMembers.includes(user._id) && <CheckCircle2 size={18} />}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

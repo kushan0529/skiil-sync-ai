@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
-import { fetchProjects } from '../store/slices/projectSlice';
+import { fetchProjects, deleteProject as deleteProjectThunk } from '../store/slices/projectSlice';
 import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X, UserPlus } from 'lucide-react';
 import ManagerDashboard from '../components/ManagerDashboard';
 import { useAuth } from '../context/AuthContext';
@@ -37,12 +37,7 @@ const ManagerAssignment = () => {
       await axios.put(`/api/users/${userId}/approve`);
       setSuccessMessage('Manager account approved successfully.');
       dispatch(fetchProjects());
-      // Re-fetch users to update the list
-      const usersRes = await axios.get('/api/users');
-      // Since we don't have a global fetchUsers thunk that's easily accessible here without more changes, 
-      // we'll just rely on the fact that the next time it's needed it will be fresh or we can trigger it.
-      // Better: use the userSlice thunk if available
-      window.location.reload(); // Simple way to refresh all data for now
+      window.location.reload(); 
     } catch (err) {
       console.error('Failed to approve manager');
     }
@@ -62,14 +57,14 @@ const ManagerAssignment = () => {
     if (!projectToDelete) return;
     setDeleteLoading(true);
     try {
-      await axios.delete(`/api/projects/${projectToDelete._id}`);
+      await dispatch(deleteProjectThunk(projectToDelete._id)).unwrap();
       setSuccessMessage(`Project "${projectToDelete.name}" deleted successfully.`);
       setIsDeleteModalOpen(false);
       setProjectToDelete(null);
-      dispatch(fetchProjects());
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-      console.error('Failed to delete project');
+    } catch (err: any) {
+      console.error('Failed to delete project:', err);
+      alert(err || 'Failed to delete project. Check permissions.');
     } finally {
       setDeleteLoading(false);
     }
@@ -335,6 +330,7 @@ const ManagerAssignment = () => {
           }}
           projectId={projectToAssign._id}
           currentMembers={projectToAssign.members || []}
+          requiredSkills={projectToAssign.requiredSkills || []}
           onSuccess={handleAssignSuccess}
         />
       )}

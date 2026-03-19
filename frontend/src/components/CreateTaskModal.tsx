@@ -1,22 +1,26 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import axios from 'axios';
-import { Type, FileText, Briefcase, User, Flag, Calendar } from 'lucide-react';
+import { Type, FileText, Briefcase, User, Flag, Calendar, CheckCircle2, ChevronDown, Clock } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../store';
+import { createTask } from '../store/slices/taskSlice';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (msg: string) => void;
+  onSuccess?: (msg: string) => void;
   defaultProjectId?: string;
 }
 
 const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: CreateTaskModalProps) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     startDate: '',
     deadline: '',
-    priority: 'medium',
+    preference: 'medium',
     project: defaultProjectId || '',
     assignee: ''
   });
@@ -28,9 +32,11 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
   useEffect(() => {
     if (isOpen) {
       fetchData();
-      if (defaultProjectId) {
-        setFormData(prev => ({ ...prev, project: defaultProjectId }));
-      }
+      setFormData(prev => ({ 
+        ...prev, 
+        project: defaultProjectId || '',
+        startDate: new Date().toISOString().split('T')[0] // Default to today
+      }));
     }
   }, [isOpen, defaultProjectId]);
 
@@ -50,7 +56,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.project) {
-      setError('Please select a project to associate this task with.');
+      setError('A project association is required to create a task.');
       return;
     }
 
@@ -58,20 +64,24 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
     setError('');
 
     try {
-      await axios.post('/api/tasks', formData);
-      onSuccess('New task successfully created and queued.');
-      onClose();
-      setFormData({
-        title: '',
-        description: '',
-        startDate: '',
-        deadline: '',
-        priority: 'medium',
-        project: defaultProjectId || '',
-        assignee: ''
-      });
+      const resultAction = await dispatch(createTask(formData));
+      if (createTask.fulfilled.match(resultAction)) {
+        if (onSuccess) onSuccess('Task successfully initialized and assigned.');
+        onClose();
+        setFormData({
+          title: '',
+          description: '',
+          startDate: '',
+          deadline: '',
+          preference: 'medium',
+          project: defaultProjectId || '',
+          assignee: ''
+        });
+      } else {
+        setError((resultAction.payload as string) || 'Could not initialize task. Please verify your inputs.');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to initialize task. Please try again.');
+      setError('An unexpected system error occurred.');
     } finally {
       setLoading(false);
     }
@@ -79,125 +89,135 @@ const CreateTaskModal = ({ isOpen, onClose, onSuccess, defaultProjectId }: Creat
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Define New Task">
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '0.5rem 0' }}>
         {error && (
-          <div className="status-badge status-todo" style={{ width: '100%', padding: '0.75rem', textAlign: 'center', borderRadius: 'var(--radius)' }}>
+          <div className="fade-in" style={{ color: '#ef4444', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.1)', textAlign: 'center' }}>
             {error}
           </div>
         )}
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div className="input-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-              <Type size={16} /> Task Title
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+              <Type size={18} className="text-primary" /> Task Title
             </label>
             <input 
               type="text" 
               value={formData.title} 
               onChange={(e) => setFormData({...formData, title: e.target.value})} 
               required 
-              placeholder="e.g. Design System Implementation"
-              style={{ padding: '0.75rem' }}
+              placeholder="e.g. Implement OAuth2 flow"
+              style={{ padding: '0.875rem 1.125rem', borderRadius: '14px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '1rem', fontWeight: 500, width: '100%', outline: 'none' }}
+              className="input-focus"
             />
           </div>
 
-          <div className="input-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-              <FileText size={16} /> Task Description
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+              <FileText size={18} className="text-primary" /> Detailed Scope
             </label>
             <textarea 
               value={formData.description} 
               onChange={(e) => setFormData({...formData, description: e.target.value})} 
-              rows={3}
-              placeholder="Provide detailed context for this task..."
-              style={{ padding: '0.75rem', resize: 'none' }}
+              rows={4}
+              placeholder="Provide technical requirements, constraints, and success criteria..."
+              style={{ padding: '0.875rem 1.125rem', borderRadius: '14px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '1rem', fontWeight: 500, width: '100%', outline: 'none', resize: 'none' }}
+              className="input-focus"
             />
           </div>
 
           <div className="grid-2" style={{ gap: '1.5rem' }}>
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                <Briefcase size={16} /> Project
+            <div className="input-group" style={{ marginBottom: 0, position: 'relative' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                <Briefcase size={18} className="text-primary" /> Project Context
               </label>
               <select 
                 value={formData.project} 
                 onChange={(e) => setFormData({...formData, project: e.target.value})}
                 required
                 disabled={!!defaultProjectId}
-                style={{ padding: '0.75rem' }}
+                style={{ padding: '0.875rem 1.125rem', borderRadius: '14px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '0.95rem', fontWeight: 600, width: '100%', outline: 'none', appearance: 'none', cursor: 'pointer' }}
+                className="input-focus"
               >
-                <option value="">Select Target Project</option>
+                <option value="">Select Project</option>
                 {projects.map(p => (
                   <option key={p._id} value={p._id}>{p.name}</option>
                 ))}
               </select>
+              <ChevronDown size={18} style={{ position: 'absolute', right: '1rem', top: '2.8rem', pointerEvents: 'none', color: 'var(--text-muted)' }} />
             </div>
 
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                <User size={16} /> Assignee
+            <div className="input-group" style={{ marginBottom: 0, position: 'relative' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                <User size={18} className="text-primary" /> Assign Talent
               </label>
               <select 
                 value={formData.assignee} 
                 onChange={(e) => setFormData({...formData, assignee: e.target.value})}
-                style={{ padding: '0.75rem' }}
+                style={{ padding: '0.875rem 1.125rem', borderRadius: '14px', border: '1px solid var(--border)', background: 'var(--bg)', fontSize: '0.95rem', fontWeight: 600, width: '100%', outline: 'none', appearance: 'none', cursor: 'pointer' }}
+                className="input-focus"
               >
-                <option value="">Leave Unassigned (Backlog)</option>
+                <option value="">Unassigned (Backlog)</option>
                 {users.map(u => (
-                  <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
+                  <option key={u._id} value={u._id}>{u.name} — {u.role}</option>
                 ))}
               </select>
+              <ChevronDown size={18} style={{ position: 'absolute', right: '1rem', top: '2.8rem', pointerEvents: 'none', color: 'var(--text-muted)' }} />
             </div>
           </div>
 
-          <div className="grid-3" style={{ gap: '1.25rem' }}>
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                <Flag size={16} /> Priority
-              </label>
-              <select 
-                value={formData.priority} 
-                onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                style={{ padding: '0.75rem' }}
-              >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-              </select>
-            </div>
+          <div style={{ padding: '1.5rem', background: 'rgba(99, 102, 241, 0.03)', borderRadius: '20px', border: '1px solid rgba(99, 102, 241, 0.08)' }}>
+             <p style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.25rem' }}>Timing & Priority</p>
+             <div className="grid-3" style={{ gap: '1.25rem' }}>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <Flag size={14} /> Priority
+                </label>
+                <select 
+                  value={formData.preference} 
+                  onChange={(e) => setFormData({...formData, preference: e.target.value})}
+                  style={{ padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--card-bg)', fontSize: '0.875rem', fontWeight: 700, width: '100%', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
 
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                <Calendar size={16} /> Start Date
-              </label>
-              <input 
-                type="date" 
-                value={formData.startDate} 
-                onChange={(e) => setFormData({...formData, startDate: e.target.value})} 
-                required
-                style={{ padding: '0.75rem' }}
-              />
-            </div>
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <Clock size={14} /> Start
+                </label>
+                <input 
+                  type="date" 
+                  value={formData.startDate} 
+                  onChange={(e) => setFormData({...formData, startDate: e.target.value})} 
+                  required
+                  style={{ padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--card-bg)', fontSize: '0.875rem', fontWeight: 700, width: '100%', outline: 'none' }}
+                />
+              </div>
 
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', fontWeight: 600 }}>
-                <Calendar size={16} /> Deadline
-              </label>
-              <input 
-                type="date" 
-                value={formData.deadline} 
-                onChange={(e) => setFormData({...formData, deadline: e.target.value})} 
-                required
-                style={{ padding: '0.75rem' }}
-              />
+              <div className="input-group" style={{ marginBottom: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <Calendar size={14} /> Deadline
+                </label>
+                <input 
+                  type="date" 
+                  value={formData.deadline} 
+                  onChange={(e) => setFormData({...formData, deadline: e.target.value})} 
+                  required
+                  style={{ padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--card-bg)', fontSize: '0.875rem', fontWeight: 700, width: '100%', outline: 'none' }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-          <button type="button" onClick={onClose} className="btn btn-outline" style={{ padding: '0.75rem 1.5rem' }}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '0.75rem 2rem' }}>
-            {loading ? 'Initializing Task...' : 'Confirm Task'}
+        <div style={{ display: 'flex', gap: '1.25rem', justifyContent: 'flex-end', marginTop: '1rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+          <button type="button" onClick={onClose} className="btn btn-outline" style={{ padding: '0.875rem 1.75rem', borderRadius: '12px', fontWeight: 700 }}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding: '0.875rem 2.25rem', borderRadius: '12px', fontWeight: 700, boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.4)' }}>
+            {loading ? 'Processing...' : 'Confirm Task'}
+            {!loading && <CheckCircle2 size={18} style={{ marginLeft: '0.5rem' }} />}
           </button>
         </div>
       </form>

@@ -68,9 +68,7 @@ exports.createProject = async (req, res, next) => {
     }
 
     let message = 'Project created successfully';
-    if (members && members.length > 0) {
-      message = `Project created and assigned to ${members.length} members!`;
-    }
+    
 
     res.json({ project, message });
   } catch (err) { next(err); }
@@ -78,11 +76,17 @@ exports.createProject = async (req, res, next) => {
 
 exports.listProjects = async (req, res, next) => {
   try {
-    let query = { $or: [{ owner: req.user._id }, { members: req.user._id }] };
+    let query = {};
+    const isManager = req.user.role === 'manager' || req.user.role === 'admin';
     
-    // If manager or admin, show all projects
-    if (req.user.role === 'manager' || req.user.role === 'admin') {
-      query = {};
+    if (!isManager) {
+      // Members only see projects they are assigned to or own
+      query = {
+        $or: [
+          { members: req.user._id },
+          { owner: req.user._id }
+        ]
+      };
     }
 
     const projects = await Project.find(query).populate('owner members', '-password');
@@ -100,9 +104,19 @@ exports.getProject = async (req, res, next) => {
 
 exports.updateProject = async (req, res, next) => {
   try {
-    const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('owner members', '-password');
+    const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    res.json({ project });
+    
+    const isMember = project.members.some(m => m.toString() === req.user._id.toString());
+    const isOwner = project.owner && project.owner.toString() === req.user._id.toString();
+    const isManager = req.user.role === 'manager' || req.user.role === 'admin';
+    
+    if (!isMember && !isOwner && !isManager) {
+      return res.status(403).json({ error: 'Not authorized to update this project' });
+    }
+    
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('owner members', '-password');
+    res.json({ project: updatedProject });
   } catch (err) { next(err); }
 };
 

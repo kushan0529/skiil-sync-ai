@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
-import { fetchProjectById, clearCurrentProject } from '../store/slices/projectSlice';
-import { fetchTasksByProjectId } from '../store/slices/taskSlice';
-import axios from 'axios';
+import { fetchProjectById, clearCurrentProject, updateProject } from '../store/slices/projectSlice';
+import { fetchTasksByProjectId, updateTask, deleteTask } from '../store/slices/taskSlice';
 import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
+import CreateTaskModal from '../components/CreateTaskModal';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 
@@ -21,15 +21,27 @@ const ProjectDetails = () => {
   const { projectTasks: tasks, loading: tasksLoading } = useSelector((state: RootState) => state.tasks);
   
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handleTaskSuccess = (msg: string) => {
+    setSuccessMsg(msg);
+    if (id) dispatch(fetchTasksByProjectId(id));
+    setTimeout(() => setSuccessMsg(''), 5000);
+  };
 
   const toggleTaskCompletion = async (task: any) => {
     const isNowDone = task.status !== 'done';
     const newStatus = isNowDone ? 'done' : 'todo';
     const newProgress = isNowDone ? 100 : 0;
 
+    if (!id) return;
+
     try {
-      await axios.put(`/api/tasks/${task._id}`, { status: newStatus, progress: newProgress });
+      await dispatch(updateTask({ 
+        taskId: task._id, 
+        taskData: { status: newStatus, progress: newProgress } 
+      }));
       
       // Calculate project progress
       const otherTasks = tasks.filter(t => t._id !== task._id);
@@ -38,37 +50,29 @@ const ProjectDetails = () => {
       const totalCount = allTasks.length;
       const projectProgress = Math.round((completedCount / totalCount) * 100);
 
-      await axios.put(`/api/projects/${id}`, { progress: projectProgress });
-      
-      if (id) {
-        dispatch(fetchTasksByProjectId(id));
-        dispatch(fetchProjectById(id));
-      }
+      dispatch(updateProject({ 
+        id, 
+        projectData: { progress: projectProgress } 
+      }));
     } catch (err) {
       console.error('Failed to toggle task completion');
     }
   };
 
-  const handleTaskProgressChange = async (taskId: string, newProgress: number) => {
-    try {
-      const payload: any = { progress: newProgress };
-      if (newProgress === 100) payload.status = 'done';
-      else if (newProgress > 0) payload.status = 'in-progress';
-      else payload.status = 'todo';
+  const handleTaskProgressChange = (taskId: string, newProgress: number) => {
+    let newStatus = 'todo';
+    if (newProgress === 100) newStatus = 'done';
+    else if (newProgress > 0) newStatus = 'in-progress';
 
-      await axios.put(`/api/tasks/${taskId}`, payload);
-      if (id) dispatch(fetchTasksByProjectId(id));
-    } catch (err) {
-      console.error('Failed to update task progress');
-    }
+    dispatch(updateTask({ 
+      taskId, 
+      taskData: { progress: newProgress, status: newStatus } 
+    }));
   };
 
-  const handleProjectProgressChange = async (newProgress: number) => {
-    try {
-      await axios.put(`/api/projects/${id}`, { progress: newProgress });
-      if (id) dispatch(fetchProjectById(id));
-    } catch (err) {
-      console.error('Failed to update project progress');
+  const handleProjectProgressChange = (newProgress: number) => {
+    if (id) {
+      dispatch(updateProject({ id, projectData: { progress: newProgress } }));
     }
   };
 
@@ -106,12 +110,11 @@ const ProjectDetails = () => {
     setTimeout(() => setSuccessMsg(''), 5000);
   };
 
-  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+  const handleDeleteTaskAction = async (taskId: string, taskTitle: string) => {
     if (window.confirm(`Are you sure you want to delete the task "${taskTitle}"?`)) {
       try {
-        await axios.delete(`/api/tasks/${taskId}`);
+        await dispatch(deleteTask(taskId));
         setSuccessMsg(`Task "${taskTitle}" deleted successfully.`);
-        if (id) dispatch(fetchTasksByProjectId(id));
         setTimeout(() => setSuccessMsg(''), 5000);
       } catch (err) {
         console.error('Failed to delete task');
@@ -157,7 +160,7 @@ const ProjectDetails = () => {
             <button className="btn btn-outline" style={{ background: 'var(--bg)' }} onClick={() => setIsAssignModalOpen(true)}>
               <UserPlus size={18} /> Manage Team
             </button>
-            <button className="btn btn-primary">
+            <button className="btn btn-primary" onClick={() => setIsCreateTaskModalOpen(true)}>
               <Plus size={18} /> New Task
             </button>
           </div>
@@ -209,8 +212,8 @@ const ProjectDetails = () => {
                           Due {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.priority === 'high' ? 'var(--error)' : task.priority === 'medium' ? 'var(--primary)' : 'var(--success)' }}></span>
-                           Priority: <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{task.priority}</span>
+                           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: (task.preference || (task as any).priority) === 'high' ? 'var(--error)' : (task.preference || (task as any).priority) === 'medium' ? 'var(--primary)' : 'var(--success)' }}></span>
+                           Priority: <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>{task.preference || (task as any).priority}</span>
                         </span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                            <UserPlus size={14} />
@@ -239,7 +242,7 @@ const ProjectDetails = () => {
                     </div>
                     {isManager && (
                       <button 
-                        onClick={() => handleDeleteTask(task._id, task.title)}
+                        onClick={() => handleDeleteTaskAction(task._id, task.title)}
                         style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}
                         title="Delete Task"
                       >
@@ -254,7 +257,7 @@ const ProjectDetails = () => {
               ) : (
                 <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', border: '1px dashed var(--border)' }}>
                   <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>This project currently has no active tasks.</p>
-                  <button className="btn btn-outline btn-sm" style={{ marginTop: '1rem' }}>Create First Task</button>
+                  <button className="btn btn-outline btn-sm" style={{ marginTop: '1rem' }} onClick={() => setIsCreateTaskModalOpen(true)}>Create First Task</button>
                 </div>
               )}
             </div>
@@ -370,9 +373,16 @@ const ProjectDetails = () => {
           onClose={() => setIsAssignModalOpen(false)}
           projectId={id || ''}
           currentMembers={project.members || []}
+          requiredSkills={project.requiredSkills || []}
           onSuccess={handleAssignSuccess}
         />
       )}
+      <CreateTaskModal
+        isOpen={isCreateTaskModalOpen}
+        onClose={() => setIsCreateTaskModalOpen(false)}
+        onSuccess={handleTaskSuccess}
+        defaultProjectId={id}
+      />
     </div>
   );
 };

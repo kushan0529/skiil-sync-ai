@@ -17,9 +17,27 @@ exports.createTask = async (req, res, next) => {
 exports.listTasks = async (req, res, next) => {
   try {
     let query = {};
-    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
-      query.assignee = req.user._id;
+    const isManager = req.user.role === 'manager' || req.user.role === 'admin';
+    
+    if (!isManager) {
+      // Find all projects where the user is a member
+      const projects = await Project.find({
+        $or: [
+          { members: req.user._id },
+          { owner: req.user._id }
+        ]
+      });
+      const projectIds = projects.map(p => p._id);
+      
+      // Filter tasks belonging to these projects OR assigned directly to the user
+      query = {
+        $or: [
+          { project: { $in: projectIds } },
+          { assignee: req.user._id }
+        ]
+      };
     }
+
     const tasks = await Task.find(query).populate('project', 'name').populate('assignee', 'name');
     res.json({ tasks });
   } catch (err) {
@@ -39,19 +57,28 @@ exports.getTask = async (req, res, next) => {
 
 exports.updateTask = async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('project assignee');
+    const task = await Task.findById(req.params.id).populate('project');
     if (!task) return res.status(404).json({ error: 'Task not found' });
     
-    const io = req.app.get('io');
+    const isAssignee = task.assignee && task.assignee.toString() === req.user._id.toString();
+    const isProjectMember = task.project && task.project.members.some(m => m.toString() === req.user._id.toString());
+    const isManager = req.user.role === 'manager' || req.user.role === 'admin';
+    
+    if (!isAssignee && !isProjectMember && !isManager) {
+      return res.status(403).json({ error: 'Not authorized to update this task' });
+    }
+    
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('project assignee');
+    
     const io_instance = req.app.get('io');
     if (io_instance) {
-      if (task.project) {
-        io_instance.to(task.project._id.toString()).emit('taskUpdate', { type: 'updated', task });
-        io_instance.to(task.project._id.toString()).emit('projectUpdate', { type: 'recalculate', projectId: task.project._id });
+      if (updatedTask.project) {
+        io_instance.to(updatedTask.project._id.toString()).emit('taskUpdate', { type: 'updated', task: updatedTask });
+        io_instance.to(updatedTask.project._id.toString()).emit('projectUpdate', { type: 'recalculate', projectId: updatedTask.project._id });
       }
-      io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: task._id });
+      io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
     }
-    res.json(task);
+    res.json(updatedTask);
   } catch (err) {
     next(err);
   }
