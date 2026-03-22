@@ -124,7 +124,8 @@ const ProjectDetails = () => {
   };
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
-  const isMember = project?.members?.some((m: any) => (m._id || m) === user?._id);
+  const isMember = project?.members?.some((m: any) => (m._id || m) === user?._id) || project?.owner === user?._id || (project?.owner?._id === user?._id);
+  const canModify = isManager || isMember;
   const loading = projectLoading || tasksLoading;
 
   if (loading && !project) return (
@@ -158,12 +159,21 @@ const ProjectDetails = () => {
             <p style={{ color: 'var(--text-muted)', maxWidth: '700px', fontSize: '1.1rem', lineHeight: 1.6 }}>{project?.description}</p>
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button className="btn btn-outline" style={{ background: 'var(--bg)' }} onClick={() => setIsAssignModalOpen(true)}>
-              <UserPlus size={18} /> Manage Team
-            </button>
-            <button className="btn btn-primary" onClick={() => setIsCreateTaskModalOpen(true)}>
-              <Plus size={18} /> New Task
-            </button>
+            {canModify && (
+              <>
+                <button className="btn btn-outline" style={{ background: 'var(--bg)' }} onClick={() => setIsAssignModalOpen(true)}>
+                  <UserPlus size={18} /> Manage Team
+                </button>
+                <button className="btn btn-primary" onClick={() => setIsCreateTaskModalOpen(true)}>
+                  <Plus size={18} /> New Task
+                </button>
+              </>
+            )}
+            {!canModify && (
+              <div className="status-badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+                <Clock size={16} /> View-only Mode
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -179,11 +189,12 @@ const ProjectDetails = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {tasks.length > 0 ? (
                 tasks.map((task) => (
-                  <div key={task._id} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem', border: '1px solid var(--border)', boxShadow: 'none' }}>
+                  <div key={task._id} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem', border: '1px solid var(--border)', boxShadow: 'none', opacity: canModify ? 1 : 0.85 }}>
                     <button 
-                      onClick={() => toggleTaskCompletion(task)}
-                      style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'transform 0.2s' }} 
-                      className="hover-scale"
+                      onClick={() => canModify && toggleTaskCompletion(task)}
+                      disabled={!canModify}
+                      style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'transform 0.2s', cursor: canModify ? 'pointer' : 'default' }} 
+                      className={canModify ? "hover-scale" : ""}
                     >
                       {task.status === 'done' ? <CheckCircle2 size={28} /> : <Circle size={28} />}
                     </button>
@@ -230,7 +241,7 @@ const ProjectDetails = () => {
                         <div style={{ height: '4px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '0.3rem' }}>
                           <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
                         </div>
-                        {(isManager || task.assignee?._id === user?._id) && (
+                        {canModify && (isManager || (task.assignee?._id || task.assignee) === user?._id) && (
                           <input 
                             type="range" 
                             min="0" 
@@ -242,7 +253,7 @@ const ProjectDetails = () => {
                         )}
                       </div>
                     </div>
-                    {isManager && (
+                    {isManager && canModify && (
                       <button 
                         onClick={() => handleDeleteTaskAction(task._id, task.title)}
                         style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}
@@ -251,7 +262,7 @@ const ProjectDetails = () => {
                         <Trash2 size={20} />
                       </button>
                     )}
-                    <button style={{ color: 'var(--text-muted)', background: 'transparent' }}>
+                    <button style={{ color: 'var(--text-muted)', background: 'transparent', cursor: canModify ? 'pointer' : 'default' }}>
                       <MoreVertical size={20} />
                     </button>
                   </div>
@@ -280,7 +291,7 @@ const ProjectDetails = () => {
                     </div>
                     <span style={{ fontWeight: 700, color: 'var(--primary)', minWidth: '40px' }}>{project?.progress || 0}%</span>
                   </div>
-                  {(isManager || isMember) && (
+                  {canModify && (
                     <input 
                       type="range" 
                       min="0" 

@@ -2,60 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Mail, Shield, Upload, FileText, Check, Loader2, Sparkles } from 'lucide-react';
-
-const SkillOverlay = ({ skills }: { skills: string[] }) => {
-  return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      background: 'rgba(0,0,0,0.9)',
-      zIndex: 9999,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      color: 'white',
-      padding: '2rem',
-      textAlign: 'center'
-    }}>
-      <Sparkles size={64} color="var(--primary)" style={{ marginBottom: '2rem', animation: 'bounce 2s infinite' }} />
-      <h1 style={{ fontSize: '3rem', fontWeight: 800, marginBottom: '2rem' }}>Skills Identified!</h1>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', maxWidth: '1000px' }}>
-        {skills.map((skill, i) => (
-          <div 
-            key={skill} 
-            style={{ 
-              fontSize: '2rem', 
-              fontWeight: 700, 
-              padding: '1rem 2rem', 
-              background: 'var(--primary)', 
-              borderRadius: '1rem',
-              animation: `fadeIn 0.5s ease-out forwards ${i * 0.1}s`,
-              opacity: 0,
-              boxShadow: '0 0 20px var(--primary)'
-            }}
-          >
-            {skill}
-          </div>
-        ))}
-      </div>
-      <p style={{ marginTop: '3rem', fontSize: '1.5rem', opacity: 0.8 }}>AI is matching you with the perfect project...</p>
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.8); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
-        }
-      `}</style>
-    </div>
-  );
-};
+import SkillOverlay from '../components/SkillOverlay';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -142,7 +89,7 @@ const Profile = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      {showSkills && <SkillOverlay skills={extractedSkills} />}
+      <SkillOverlay skills={extractedSkills} isVisible={showSkills} />
       <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '2rem' }}>Profile Settings</h1>
       
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>

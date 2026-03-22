@@ -21,7 +21,15 @@ const Projects = () => {
     dispatch(fetchProjects());
   }, [dispatch]);
 
-  const filteredProjects = projects.filter(p =>
+  const myProjects = projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id);
+  const globalProjects = projects.filter(p => !myProjects.some(mp => mp._id === p._id));
+
+  const filteredMyProjects = myProjects.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredGlobalProjects = globalProjects.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -35,6 +43,50 @@ const Projects = () => {
   if (loading && projects.length === 0) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
       <div className="loading-spinner"></div>
+    </div>
+  );
+
+  const ProjectCard = ({ project, isMyProject }: { project: any, isMyProject: boolean }) => (
+    <div key={project._id} className="card" style={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      padding: '1.5rem',
+      background: isMyProject ? 'var(--card-bg)' : 'rgba(0,0,0,0.02)',
+      border: isMyProject ? '1px solid var(--border)' : '1px dashed var(--border)',
+      opacity: isMyProject ? 1 : 0.8
+    }}>
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', color: isMyProject ? 'var(--primary)' : 'var(--text-muted)' }}>
+          <Briefcase size={24} />
+        </div>
+        <div>
+          <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{project.name}</h4>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{project.description}</p>
+          <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <Clock size={14} />
+              Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No date'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <Users size={14} />
+              {project.members && project.members.length > 0 
+                ? project.members.map((m: any) => (typeof m === 'object' ? m.name : 'User')).filter(Boolean).join(', ') 
+                : 'Unassigned'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+          <span className={`status-badge status-${project.status.toLowerCase()}`}>{project.status}</span>
+          <DeadlineWarning deadline={project.deadline} status={project.status} />
+        </div>
+        <Link to={`/projects/${project._id}`} className="btn btn-outline btn-sm">
+          {isMyProject ? 'Access' : 'View'} <ArrowRight size={16} />
+        </Link>
+      </div>
     </div>
   );
 
@@ -70,61 +122,33 @@ const Projects = () => {
               style={{ paddingLeft: '3rem', width: '100%', borderRadius: '50px' }}
             />
           </div>
-          <div className="flex gap-4">
-            <select className="btn btn-outline" style={{ borderRadius: '50px' }}>
-              <option>All Status</option>
-              <option>Planning</option>
-              <option>Active</option>
-              <option>Completed</option>
-            </select>
-          </div>
         </div>
       </div>
 
-      <div className="grid-1" style={{ gap: '1.5rem' }}>
-        {filteredProjects.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '5rem' }}>
-            <Briefcase size={48} style={{ margin: '0 auto 1.5rem', opacity: 0.2 }} />
-            <h3>No projects found</h3>
-            <p className="text-muted">Try a different search term or create a new project.</p>
-          </div>
-        ) : (
-          filteredProjects.map(project => (
-            <div key={project._id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', color: 'var(--primary)' }}>
-                  <Briefcase size={24} />
-                </div>
-                <div>
-                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem' }}>{project.name}</h4>
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>{project.description}</p>
-                  <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      <Clock size={14} />
-                      Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No date'}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <Users size={14} />
-                      {project.members && project.members.length > 0 
-                        ? project.members.map((m: any) => (typeof m === 'object' ? m.name : 'User')).filter(Boolean).join(', ') 
-                        : 'Unassigned'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
-                  <span className={`status-badge status-${project.status.toLowerCase()}`}>{project.status}</span>
-                  <DeadlineWarning deadline={project.deadline} status={project.status} />
-                </div>
-                <Link to={`/projects/${project._id}`} className="btn btn-outline btn-sm">
-                  View <ArrowRight size={16} />
-                </Link>
-              </div>
+      <div style={{ marginBottom: '3rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>My Projects</h2>
+        <div className="grid-1" style={{ gap: '1rem' }}>
+          {filteredMyProjects.length > 0 ? (
+            filteredMyProjects.map(p => <ProjectCard key={p._id} project={p} isMyProject={true} />)
+          ) : (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--border)' }}>
+              <p className="text-muted">You are not assigned to any projects yet.</p>
             </div>
-          ))
-        )}
+          )}
+        </div>
+      </div>
+
+      <div>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>All Global Projects</h2>
+        <div className="grid-1" style={{ gap: '1rem' }}>
+          {filteredGlobalProjects.length > 0 ? (
+            filteredGlobalProjects.map(p => <ProjectCard key={p._id} project={p} isMyProject={false} />)
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+              No other projects available.
+            </div>
+          )}
+        </div>
       </div>
 
       <CreateProjectModal

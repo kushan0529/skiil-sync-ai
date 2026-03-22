@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
@@ -6,12 +6,13 @@ import { fetchAllTasks, fetchTasksByProjectId } from '../store/slices/taskSlice'
 import { fetchUsers, removeUserFromState } from '../store/slices/userSlice';
 import { fetchProjects } from '../store/slices/projectSlice';
 import axios from 'axios';
-import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase, FileSearch, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Users, ClipboardList, UserPlus, Zap, Briefcase, FileSearch, Trash2, AlertTriangle, Upload, Loader2, Sparkles } from 'lucide-react';
 import CreateProjectModal from './CreateProjectModal';
 import CreateTaskModal from './CreateTaskModal';
 import Modal from './Modal';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles } from 'lucide-react';
+import SkillOverlay from './SkillOverlay';
+
 
 interface ManagerDashboardProps {
   onSuccess?: (msg: string) => void;
@@ -34,6 +35,11 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isUserDeleteModalOpen, setIsUserDeleteModalOpen] = useState(false);
   const [userDeleteLoading, setUserDeleteLoading] = useState(false);
+
+  // Resume parsing state
+  const [parsingUserId, setParsingUserId] = useState<string | null>(null);
+  const [showSkills, setShowSkills] = useState(false);
+  const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
 
   useEffect(() => {
     dispatch(fetchAllTasks());
@@ -95,6 +101,34 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
     }
   };
 
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>, userId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('resume', file);
+    formData.append('userId', userId);
+
+    setParsingUserId(userId);
+    try {
+      const res = await axios.post('/api/users/upload-resume', formData);
+      const skills = res.data.user.skills || [];
+      setExtractedSkills(skills);
+      
+      if (skills.length > 0) {
+        setShowSkills(true);
+        setTimeout(() => setShowSkills(false), 3000);
+      }
+      
+      dispatch(fetchUsers());
+      if (onSuccess) onSuccess(`Resume for ${res.data.user.name} parsed successfully!`);
+    } catch (err) {
+      console.error('Failed to upload resume');
+    } finally {
+      setParsingUserId(null);
+    }
+  };
+
   const isAdmin = currentUser?.role === 'admin';
   const loading = tasksLoading || usersLoading;
 
@@ -112,6 +146,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
         background: 'rgba(99, 102, 241, 0.03)',
         boxShadow: '0 8px 32px rgba(99, 102, 241, 0.1)'
     }}>
+      <SkillOverlay skills={extractedSkills} isVisible={showSkills} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
           <div style={{ 
@@ -202,9 +237,18 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                       value=""
                     >
                       <option value="">Select from available members...</option>
-                      {developers.map(dev => (
-                        <option key={dev._id} value={dev._id}>{dev.name} ({dev.role})</option>
-                      ))}
+                      {developers.map(dev => {
+                        const projectSkills = task.project?.requiredSkills || [];
+                        const matchedCount = (dev.skills || []).filter((s: string) => 
+                          projectSkills.some((ps: string) => ps.toLowerCase() === s.toLowerCase())
+                        ).length;
+
+                        return (
+                          <option key={dev._id} value={dev._id}>
+                            {dev.name} ({dev.role}){matchedCount > 0 ? ` ━ ✨ ${matchedCount} Skill Matches` : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
@@ -255,9 +299,65 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                   <div>
                     <div style={{ fontSize: '1rem', fontWeight: 700 }}>{dev.name}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dev.role}</div>
+                    
+                    {/* Skills Highlighting */}
+                    {dev.skills && dev.skills.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+                        {dev.skills.slice(0, 3).map((s: string) => (
+                          <span key={s} style={{ 
+                            fontSize: '0.65rem', 
+                            background: 'rgba(99, 102, 241, 0.08)', 
+                            color: 'var(--primary)', 
+                            padding: '0.1rem 0.4rem', 
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            border: '1px solid rgba(99, 102, 241, 0.1)'
+                          }}>
+                            {s}
+                          </span>
+                        ))}
+                        {dev.skills.length > 3 && (
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', alignSelf: 'center' }}>
+                            +{dev.skills.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                   <div style={{ position: 'relative' }}>
+                     <input 
+                       type="file" 
+                       id={`resume-${dev._id}`}
+                       style={{ display: 'none' }}
+                       accept=".pdf"
+                       onChange={(e) => handleResumeUpload(e, dev._id)}
+                       disabled={!!parsingUserId}
+                     />
+                     <label 
+                       htmlFor={`resume-${dev._id}`}
+                       className="btn btn-outline btn-sm"
+                       style={{ 
+                         padding: '0.4rem 0.75rem', 
+                         fontSize: '0.75rem', 
+                         display: 'flex', 
+                         alignItems: 'center', 
+                         gap: '0.4rem',
+                         cursor: !!parsingUserId ? 'not-allowed' : 'pointer',
+                         background: 'var(--bg)',
+                         color: 'var(--primary)',
+                         borderColor: 'rgba(99, 102, 241, 0.3)'
+                       }}
+                     >
+                       {parsingUserId === dev._id ? (
+                         <Loader2 size={14} className="animate-spin" />
+                       ) : (
+                         <Upload size={14} />
+                       )}
+                       {parsingUserId === dev._id ? 'Parsing...' : 'Quick Parse'}
+                     </label>
+                   </div>
                    <button 
                      onClick={() => navigate(`/manager/assign/${dev._id}`)}
                      className="btn btn-outline btn-sm"

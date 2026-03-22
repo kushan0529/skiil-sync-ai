@@ -45,9 +45,8 @@ const Dashboard = () => {
   const loading = projectsLoading || tasksLoading;
 
   // Filter projects and tasks for the user
-  const userProjects = isManager 
-    ? projects 
-    : projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id);
+  const myProjects = projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id);
+  const allProjects = projects;
   
   const userTasks = isManager
     ? tasks
@@ -57,15 +56,15 @@ const Dashboard = () => {
     // For regular users, team members are the unique set of people they work with across all projects
     const relevantTeamMembers = isManager 
       ? users.length 
-      : new Set(userProjects.flatMap(p => p.members?.map((m: any) => m?._id || m) || [])).size;
+      : new Set(myProjects.flatMap(p => p.members?.map((m: any) => m?._id || m) || [])).size;
 
     setStats({
-      totalProjects: userProjects.length,
+      totalProjects: myProjects.length,
       activeTasks: userTasks.filter((t: any) => t.status !== 'done').length,
       completedTasks: userTasks.filter((t: any) => t.status === 'done').length,
       teamMembers: relevantTeamMembers || 0
     });
-  }, [userProjects, userTasks, users, isManager]);
+  }, [myProjects, userTasks, users, isManager]);
 
   const taskStats = [
     { name: 'To Do', value: userTasks.filter((t: any) => t.status === 'todo').length, color: '#94a3b8' },
@@ -73,7 +72,7 @@ const Dashboard = () => {
     { name: 'Completed', value: userTasks.filter((t: any) => t.status === 'done').length, color: '#16a34a' }
   ].filter(s => s.value > 0);
 
-  const projectData = userProjects.map(p => ({
+  const projectData = myProjects.map(p => ({
     name: p.name.length > 15 ? p.name.substring(0, 12) + '...' : p.name,
     progress: p.progress || 0
   })).slice(0, 5);
@@ -84,7 +83,8 @@ const Dashboard = () => {
     </div>
   );
 
-  const recentProjects = userProjects.slice(0, 3);
+  const recentMyProjects = myProjects.slice(0, 3);
+  const recentGlobalProjects = allProjects.filter(p => !myProjects.some(mp => mp._id === p._id)).slice(0, 3);
   const displayTasks = userTasks.slice(0, 5);
 
 
@@ -212,13 +212,13 @@ const Dashboard = () => {
           {/* Projects Section */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{isManager ? 'Recent Projects' : 'My Projects'}</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>My Active Projects</h3>
               <Link to="/projects" className="btn btn-outline btn-sm" style={{ fontWeight: 700, borderRadius: '8px' }}>View All</Link>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {recentProjects.length > 0 ? (
-                recentProjects.map((project) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+              {recentMyProjects.length > 0 ? (
+                recentMyProjects.map((project) => (
                   <div key={project._id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', border: '1px solid var(--border)', background: 'var(--card-bg)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                       <div style={{ width: '48px', height: '48px', background: 'var(--bg-secondary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -238,9 +238,6 @@ const Dashboard = () => {
                       <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
                         <span className={`status-badge status-${project.status.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '0.25rem 0.75rem' }}>{project.status}</span>
                         <DeadlineWarning deadline={project.deadline} status={project.status} />
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                          Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'N/A'}
-                        </div>
                       </div>
                       <Link to={`/projects/${project._id}`} style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', transition: 'all 0.2s' }} className="hover-primary">
                         <ChevronRight size={20} />
@@ -249,9 +246,40 @@ const Dashboard = () => {
                   </div>
                 ))
               ) : (
-                <div className="card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', border: '1px dashed var(--border)', background: 'transparent' }}>
-                  <Briefcase size={48} style={{ margin: '0 auto 1.25rem', opacity: 0.3 }} />
-                  <p style={{ fontSize: '1rem', fontWeight: 500 }}>No projects assigned to your profile yet.</p>
+                <div className="card" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', border: '1px dashed var(--border)', background: 'transparent' }}>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 500 }}>No projects assigned to you yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Explore Global Projects</h3>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {recentGlobalProjects.length > 0 ? (
+                recentGlobalProjects.map((project) => (
+                  <div key={project._id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', border: '1px solid var(--border)', background: 'rgba(0,0,0,0.02)', opacity: 0.8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                      <div style={{ width: '48px', height: '48px', background: 'var(--bg)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <Briefcase size={22} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.35rem' }}>{project.name}</h4>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Open for viewing</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                      <span className={`status-badge status-${project.status.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '0.25rem 0.75rem' }}>{project.status}</span>
+                      <Link to={`/projects/${project._id}`} style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)' }}>
+                        <ChevronRight size={20} />
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                   All current projects are in your list.
                 </div>
               )}
             </div>

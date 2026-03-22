@@ -38,7 +38,7 @@ exports.listTasks = async (req, res, next) => {
       };
     }
 
-    const tasks = await Task.find(query).populate('project', 'name').populate('assignee', 'name');
+    const tasks = await Task.find(query).populate('project', 'name requiredSkills').populate('assignee', 'name');
     res.json({ tasks });
   } catch (err) {
     next(err);

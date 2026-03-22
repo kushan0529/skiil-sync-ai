@@ -76,20 +76,8 @@ exports.createProject = async (req, res, next) => {
 
 exports.listProjects = async (req, res, next) => {
   try {
-    let query = {};
-    const isManager = req.user.role === 'manager' || req.user.role === 'admin';
-    
-    if (!isManager) {
-      // Members only see projects they are assigned to or own
-      query = {
-        $or: [
-          { members: req.user._id },
-          { owner: req.user._id }
-        ]
-      };
-    }
-
-    const projects = await Project.find(query).populate('owner members', '-password');
+    // Return all projects to all users so they can see the global project landscape
+    const projects = await Project.find().populate('owner members', '-password');
     res.json({ projects });
   } catch (err) { next(err); }
 };

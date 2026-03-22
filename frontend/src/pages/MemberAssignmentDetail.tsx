@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { User, Mail, Shield, Upload, FileText, Check, Loader2, Sparkles, Briefcase, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import SkillOverlay from '../components/SkillOverlay';
 
 const MemberAssignmentDetail = () => {
   const { userId } = useParams();
@@ -13,6 +14,8 @@ const MemberAssignmentDetail = () => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [showSkills, setShowSkills] = useState(false);
+  const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
 
   useEffect(() => {
     fetchMember();
@@ -48,8 +51,15 @@ const MemberAssignmentDetail = () => {
 
     try {
       const res = await axios.post('/api/users/upload-resume', formData);
+      const skills = res.data.user.skills || [];
+      setExtractedSkills(skills);
       setMember(res.data.user);
       setMessage('Resume parsed successfully! Finding best project matches...');
+      
+      if (skills.length > 0) {
+        setShowSkills(true);
+        setTimeout(() => setShowSkills(false), 3000);
+      }
       
       // Get recommendations
       fetchRecommendations();
@@ -99,6 +109,7 @@ const MemberAssignmentDetail = () => {
 
   return (
     <div className="fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
+      <SkillOverlay skills={extractedSkills} isVisible={showSkills} />
       <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
         <button onClick={() => navigate('/manager')} className="btn btn-outline btn-sm">
           Back to Hub
