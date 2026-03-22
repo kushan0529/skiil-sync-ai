@@ -1,4 +1,5 @@
 const Task = require('../models/Task.model');
+const Project = require('../models/Project.model');
 
 exports.createTask = async (req, res, next) => {
   try {
@@ -19,24 +20,21 @@ exports.listTasks = async (req, res, next) => {
     let query = {};
     const isManager = req.user.role === 'manager' || req.user.role === 'admin';
     
-    if (!isManager) {
-      // Find all projects where the user is a member
-      const projects = await Project.find({
-        $or: [
-          { members: req.user._id },
-          { owner: req.user._id }
-        ]
-      });
-      const projectIds = projects.map(p => p._id);
-      
-      // Filter tasks belonging to these projects OR assigned directly to the user
-      query = {
-        $or: [
-          { project: { $in: projectIds } },
-          { assignee: req.user._id }
-        ]
-      };
-    }
+    // For both managers and members, we want tasks from projects they are part of
+    const projects = await Project.find({
+      $or: [
+        { members: req.user._id },
+        { owner: req.user._id }
+      ]
+    });
+    const projectIds = projects.map(p => p._id);
+    
+    query = {
+      $or: [
+        { project: { $in: projectIds } },
+        { assignee: req.user._id }
+      ]
+    };
 
     const tasks = await Task.find(query).populate('project', 'name requiredSkills').populate('assignee', 'name');
     res.json({ tasks });

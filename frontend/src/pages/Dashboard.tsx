@@ -48,9 +48,12 @@ const Dashboard = () => {
   const myProjects = projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id);
   const allProjects = projects;
   
-  const userTasks = isManager
-    ? tasks
-    : tasks.filter(t => (t.assignee?._id || t.assignee) === user?._id);
+  // userTasks should only contain tasks from projects the user is assigned to
+  const myProjectIds = myProjects.map(p => p._id);
+  const userTasks = tasks.filter(t => 
+    myProjectIds.includes(t.project?._id || t.project) || 
+    (t.assignee?._id || t.assignee) === user?._id
+  );
 
   useEffect(() => {
     // For regular users, team members are the unique set of people they work with across all projects
