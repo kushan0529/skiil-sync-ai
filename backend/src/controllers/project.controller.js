@@ -132,6 +132,13 @@ exports.deleteProject = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+exports.seed = async (req, res, next) => {
+  try {
+    const created = await seedDemoProjects(req.user._id);
+    res.json({ message: `${created.length} demo projects seeded successfully.`, projects: created });
+  } catch (err) { next(err); }
+};
+
 exports.recommendProjects = async (req, res, next) => {
   try {
     const userId = req.params.userId;

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { fetchProjects, deleteProject as deleteProjectThunk } from '../store/slices/projectSlice';
+import { fetchUsers } from '../store/slices/userSlice';
 import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X, UserPlus } from 'lucide-react';
 import ManagerDashboard from '../components/ManagerDashboard';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +17,7 @@ const ManagerAssignment = () => {
   const dispatch = useDispatch<AppDispatch>();
   
   const { projects, loading } = useSelector((state: RootState) => state.projects);
+  const { users } = useSelector((state: RootState) => state.users);
   const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
@@ -29,15 +31,17 @@ const ManagerAssignment = () => {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   // Manager approval state
-  const { users } = useSelector((state: RootState) => state.users);
   const pendingManagers = users.filter((u: any) => u.role === 'manager' && !u.isApproved);
 
   const handleApproveManager = async (userId: string) => {
     try {
       await axios.put(`/api/users/${userId}/approve`);
       setSuccessMessage('Manager account approved successfully.');
+      dispatch(fetchUsers());
       dispatch(fetchProjects());
-      window.location.reload(); 
+      
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       console.error('Failed to approve manager');
     }
@@ -45,12 +49,14 @@ const ManagerAssignment = () => {
 
   useEffect(() => {
     dispatch(fetchProjects());
+    dispatch(fetchUsers());
   }, [dispatch]);
 
   const handleAssignSuccess = (msg: string) => {
     setSuccessMessage(msg);
     dispatch(fetchProjects());
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setSuccessMessage(''), 5000);
   };
 
   const handleDeleteProject = async () => {
@@ -62,6 +68,7 @@ const ManagerAssignment = () => {
       setIsDeleteModalOpen(false);
       setProjectToDelete(null);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err: any) {
       console.error('Failed to delete project:', err);
       alert(err || 'Failed to delete project. Check permissions.');
@@ -115,7 +122,9 @@ const ManagerAssignment = () => {
         <ManagerDashboard onSuccess={(msg) => {
             setSuccessMessage(msg);
             dispatch(fetchProjects());
+            dispatch(fetchUsers());
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            setTimeout(() => setSuccessMessage(''), 5000);
         }} />
       </div>
 

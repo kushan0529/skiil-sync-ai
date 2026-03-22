@@ -8,8 +8,8 @@ const demoProjects = [
     requiredSkills: ['Python', 'TensorFlow', 'OpenAI', 'NLP', 'Machine Learning'],
     status: 'planning',
     tasks: [
-      { title: 'Data Preprocessing', description: 'Clean and tokenize the dataset.', priority: 'High' },
-      { title: 'Model Architecture', description: 'Design the transformer layers.', priority: 'Medium' }
+      { title: 'Data Preprocessing', description: 'Clean and tokenize the dataset.', priority: 'High', progress: 0 },
+      { title: 'Model Architecture', description: 'Design the transformer layers.', priority: 'Medium', progress: 0 }
     ]
   },
   {
@@ -18,28 +18,19 @@ const demoProjects = [
     requiredSkills: ['Solidity', 'Ethereum', 'React', 'Web3.js', 'Blockchain'],
     status: 'planning',
     tasks: [
-      { title: 'Smart Contract Design', description: 'Write the ERC-721 contract for skills.', priority: 'High' },
-      { title: 'Frontend Integration', description: 'Connect Metamask to the DApp.', priority: 'Medium' }
+      { title: 'Smart Contract Design', description: 'Write the ERC-721 contract for skills.', priority: 'High', progress: 0 },
+      { title: 'Frontend Integration', description: 'Connect Metamask to the DApp.', priority: 'Medium', progress: 0 }
     ]
   },
-  {
-    name: 'Data-Harbor (Big Data)',
-    description: 'Real-time data pipeline for financial insights. Processing millions of events per second.',
-    requiredSkills: ['Spark', 'Kafka', 'Scala', 'SQL', 'Big Data'],
-    status: 'planning',
-    tasks: [
-      { title: 'Kafka Producer Setup', description: 'Configure producers for high-throughput.', priority: 'High' },
-      { title: 'Spark SQL Queries', description: 'Write analytical queries for data processing.', priority: 'Medium' }
-    ]
-  },
+
   {
     name: 'Cloud-Scale (DevOps)',
     description: 'Auto-scaling infrastructure for global e-commerce. Focus on reliability.',
     requiredSkills: ['AWS', 'Docker', 'Kubernetes', 'Terraform', 'DevOps'],
     status: 'planning',
     tasks: [
-      { title: 'Kubernetes Cluster Setup', description: 'EKS cluster deployment using Terraform.', priority: 'High' },
-      { title: 'CI/CD Pipeline', description: 'Configure GitHub Actions for automated deployment.', priority: 'Medium' }
+      { title: 'Kubernetes Cluster Setup', description: 'EKS cluster deployment using Terraform.', priority: 'High', progress: 0 },
+      { title: 'CI/CD Pipeline', description: 'Configure GitHub Actions for automated deployment.', priority: 'Medium', progress: 0 }
     ]
   },
   {
@@ -48,13 +39,17 @@ const demoProjects = [
     requiredSkills: ['React', 'TypeScript', 'Tailwind', 'Figma', 'UI/UX'],
     status: 'planning',
     tasks: [
-      { title: 'Component Library Design', description: 'Create reusable UI components in Figma.', priority: 'High' },
-      { title: 'Interactive Dashboard', description: 'Implement the Kanban board drag-and-drop.', priority: 'Medium' }
+      { title: 'Component Library Design', description: 'Create reusable UI components in Figma.', priority: 'High', progress: 0 },
+      { title: 'Interactive Dashboard', description: 'Implement the Kanban board drag-and-drop.', priority: 'Medium', progress: 0 }
     ]
   }
 ];
 
 async function seedDemoProjects(ownerId) {
+  const createdProjects = [];
+  const thirtyDaysOut = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const threeDaysOut = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
   for (const demo of demoProjects) {
     let project = await Project.findOne({ name: demo.name });
     if (!project) {
@@ -63,19 +58,25 @@ async function seedDemoProjects(ownerId) {
         description: demo.description, 
         requiredSkills: demo.requiredSkills, 
         status: demo.status, 
-        owner: ownerId 
+        owner: ownerId,
+        deadline: thirtyDaysOut
       });
-      
-      // Seed tasks for this project
-      for (const t of demo.tasks) {
+      createdProjects.push(project);
+    }
+    
+    // Always check tasks for these projects to ensure they are seeded
+    for (const t of demo.tasks) {
+      const taskExists = await Task.findOne({ title: t.title, project: project._id });
+      if (!taskExists) {
         await Task.create({
           ...t,
           project: project._id,
-          deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+          deadline: threeDaysOut
         });
       }
     }
   }
+  return createdProjects;
 }
 
 module.exports = { seedDemoProjects };

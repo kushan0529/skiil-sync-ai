@@ -33,9 +33,13 @@ exports.uploadResume = async (req, res, next) => {
     }
 
     const buffer = req.file.buffer;
-    const skills = await resumeService.getSkillsFromResume(buffer);
-    const updated = await User.findByIdAndUpdate(targetUserId, { skills, resumeUrl: 'uploaded' }, { new: true }).select('-password');
-    res.json({ user: updated });
+    try {
+      const skills = await resumeService.getSkillsFromResume(buffer);
+      const updated = await User.findByIdAndUpdate(targetUserId, { skills, resumeUrl: 'uploaded' }, { new: true }).select('-password');
+      res.json({ user: updated });
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
   } catch (err) {
     next(err);
   }

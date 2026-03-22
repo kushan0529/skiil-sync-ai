@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import Modal from '../components/Modal';
 import { Sparkles } from 'lucide-react';
+import DeadlineWarning from '../components/DeadlineWarning';
 
 
 const Dashboard = () => {
@@ -53,13 +54,18 @@ const Dashboard = () => {
     : tasks.filter(t => (t.assignee?._id || t.assignee) === user?._id);
 
   useEffect(() => {
+    // For regular users, team members are the unique set of people they work with across all projects
+    const relevantTeamMembers = isManager 
+      ? users.length 
+      : new Set(userProjects.flatMap(p => p.members?.map((m: any) => m?._id || m) || [])).size;
+
     setStats({
       totalProjects: userProjects.length,
       activeTasks: userTasks.filter((t: any) => t.status !== 'done').length,
       completedTasks: userTasks.filter((t: any) => t.status === 'done').length,
-      teamMembers: users.length || 0
+      teamMembers: relevantTeamMembers || 0
     });
-  }, [userProjects, userTasks, users]);
+  }, [userProjects, userTasks, users, isManager]);
 
   const taskStats = [
     { name: 'To Do', value: userTasks.filter((t: any) => t.status === 'todo').length, color: '#94a3b8' },
@@ -93,10 +99,15 @@ const Dashboard = () => {
 
   const submitWorkLog = () => {
     if (activeTaskId && logContent.trim()) {
+      const taskToUpdate = tasks.find(t => t._id === activeTaskId);
+      if (!taskToUpdate) return;
+
       const newLog = { content: logContent.trim(), date: new Date().toISOString() };
+      const updatedWorkLogs = [...(taskToUpdate.workLogs || []), newLog];
+
       dispatch(updateTask({ 
         taskId: activeTaskId, 
-        taskData: { $push: { workLogs: newLog } } 
+        taskData: { workLogs: updatedWorkLogs } 
       }));
       setLogContent('');
       setIsLogModalOpen(false);
@@ -113,7 +124,7 @@ const Dashboard = () => {
             <span>Workspace Overview</span>
           </div>
           <h1 style={{ fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Dashboard</h1>
-          <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)' }}>Hello, {user?.name.split(' ')[0]}! You have {stats.activeTasks} pending tasks today.</p>
+          <p style={{ fontSize: '1.05rem', color: 'var(--text-muted)' }}>Hello, {user?.name?.split(' ')[0] || 'User'}! You have {stats.activeTasks} pending tasks today.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
            <div style={{ textAlign: 'right', display: 'none' }}>
@@ -224,9 +235,10 @@ const Dashboard = () => {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                      <div style={{ textAlign: 'right' }}>
+                      <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
                         <span className={`status-badge status-${project.status.toLowerCase()}`} style={{ fontSize: '0.65rem', padding: '0.25rem 0.75rem' }}>{project.status}</span>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontWeight: 500 }}>
+                        <DeadlineWarning deadline={project.deadline} status={project.status} />
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                           Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'N/A'}
                         </div>
                       </div>
@@ -268,17 +280,20 @@ const Dashboard = () => {
                           </div>
                         </div>
                       </div>
-                      <select 
-                        className={`status-badge status-${task.status.toLowerCase()}`}
-                        style={{ border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 700, padding: '0.4rem 1rem' }}
-                        value={task.status}
-                        onChange={(e) => handleStatusUpdate(task._id, e.target.value)}
-                        disabled={isManager}
-                      >
-                        <option value="todo">To Do</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="done">Done</option>
-                      </select>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                        <select 
+                          className={`status-badge status-${task.status.toLowerCase()}`}
+                          style={{ border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 700, padding: '0.4rem 1rem' }}
+                          value={task.status}
+                          onChange={(e) => handleStatusUpdate(task._id, e.target.value)}
+                          disabled={isManager}
+                        >
+                          <option value="todo">To Do</option>
+                          <option value="in-progress">In Progress</option>
+                          <option value="done">Done</option>
+                        </select>
+                        <DeadlineWarning deadline={task.deadline} status={task.status} />
+                      </div>
                     </div>
                     
                     <p style={{ fontSize: '0.925rem', color: 'var(--text-main)', marginBottom: '1.25rem', lineHeight: '1.5' }}>

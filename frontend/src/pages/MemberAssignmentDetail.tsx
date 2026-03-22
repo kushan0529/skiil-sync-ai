@@ -44,6 +44,7 @@ const MemberAssignmentDetail = () => {
 
     setUploading(true);
     setMessage('Analyzing resume with AI...');
+    setRecommendations([]); // Clear old recs
 
     try {
       const res = await axios.post('/api/users/upload-resume', formData);
@@ -52,8 +53,9 @@ const MemberAssignmentDetail = () => {
       
       // Get recommendations
       fetchRecommendations();
-    } catch (err) {
-      setMessage('Failed to upload and analyze resume');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error || 'Failed to upload and analyze resume';
+      setMessage(errMsg);
       setUploading(false);
     }
   };
@@ -63,8 +65,10 @@ const MemberAssignmentDetail = () => {
     try {
       const res = await axios.get(`/api/projects/recommend/${userId}`);
       setRecommendations(res.data.recommendations || []);
-    } catch (err) {
-      console.error('Failed to fetch recommendations');
+    } catch (err: any) {
+      const errMsg = err.response?.data?.error || 'Failed to fetch recommendations';
+      setMessage(errMsg);
+      setRecommendations([]);
     } finally {
       setLoadingRecs(false);
       setUploading(false);

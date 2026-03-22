@@ -11,6 +11,7 @@ import CreateProjectModal from './CreateProjectModal';
 import CreateTaskModal from './CreateTaskModal';
 import Modal from './Modal';
 import { useAuth } from '../context/AuthContext';
+import { Sparkles } from 'lucide-react';
 
 interface ManagerDashboardProps {
   onSuccess?: (msg: string) => void;
@@ -44,8 +45,12 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
   }, [tasks]);
 
   useEffect(() => {
-    setDevelopers(users.filter((u: any) => u.role === 'developer' || u.role === 'member' || u.role === 'user'));
-  }, [users]);
+    if (currentUser?.role === 'admin') {
+      setDevelopers(users.filter((u: any) => u._id !== currentUser?._id));
+    } else {
+      setDevelopers(users.filter((u: any) => u.role === 'developer' || u.role === 'member' || u.role === 'user'));
+    }
+  }, [users, currentUser]);
 
   const handleAssignTask = async (taskId: string, userId: string) => {
     try {
@@ -76,6 +81,17 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
       console.error('Failed to delete user');
     } finally {
       setUserDeleteLoading(false);
+    }
+  };
+
+  const handleSeedProjects = async () => {
+    try {
+      const res = await axios.post('/api/projects/seed');
+      if (onSuccess) onSuccess(res.data.message);
+      dispatch(fetchProjects());
+      dispatch(fetchAllTasks());
+    } catch (err) {
+      console.error('Failed to seed projects');
     }
   };
 
@@ -113,6 +129,13 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            onClick={handleSeedProjects} 
+            className="btn btn-outline"
+            style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, background: 'var(--bg)' }}
+          >
+            <Sparkles size={20} className="text-primary" /> Seed Demo Projects
+          </button>
           <button 
             onClick={() => setIsProjectModalOpen(true)} 
             className="btn btn-primary"

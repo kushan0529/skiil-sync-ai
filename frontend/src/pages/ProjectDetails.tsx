@@ -9,6 +9,7 @@ import AssignMemberModal from '../components/AssignMemberModal';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
+import DeadlineWarning from '../components/DeadlineWarning';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040');
 
@@ -220,7 +221,8 @@ const ProjectDetails = () => {
                            Assignee: <span style={{ fontWeight: 600 }}>{task.assignee?.name || 'Unassigned'}</span>
                         </span>
                       </div>
-                      <div style={{ maxWidth: '200px' }}>
+                      <DeadlineWarning deadline={task.deadline} status={task.status} />
+                      <div style={{ maxWidth: '200px', marginTop: '0.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
                           <span>Progress</span>
                           <span>{task.progress || 0}%</span>
@@ -292,7 +294,10 @@ const ProjectDetails = () => {
 
                 <div className="input-group" style={{ marginBottom: 0 }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem', letterSpacing: '0.05em' }}>Current Status</label>
-                  <span className={`status-badge status-${project?.status?.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project?.status}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span className={`status-badge status-${project?.status?.toLowerCase()}`} style={{ fontSize: '0.9rem', padding: '0.5rem 1.25rem' }}>{project?.status}</span>
+                    <DeadlineWarning deadline={project?.deadline} status={project?.status} />
+                  </div>
                 </div>
 
                 <div className="input-group" style={{ marginBottom: 0 }}>

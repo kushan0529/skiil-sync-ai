@@ -7,6 +7,7 @@ import axios from 'axios';
 import { Briefcase, Search, ArrowRight, Plus, Clock, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CreateProjectModal from '../components/CreateProjectModal';
+import DeadlineWarning from '../components/DeadlineWarning';
 
 const Projects = () => {
   const dispatch = useDispatch();
@@ -113,7 +114,10 @@ const Projects = () => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <span className={`status-badge status-${project.status.toLowerCase()}`}>{project.status}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                  <span className={`status-badge status-${project.status.toLowerCase()}`}>{project.status}</span>
+                  <DeadlineWarning deadline={project.deadline} status={project.status} />
+                </div>
                 <Link to={`/projects/${project._id}`} className="btn btn-outline btn-sm">
                   View <ArrowRight size={16} />
                 </Link>
