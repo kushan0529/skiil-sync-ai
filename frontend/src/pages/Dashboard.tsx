@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
@@ -21,13 +21,6 @@ const Dashboard = () => {
   const { tasks, loading: tasksLoading } = useSelector((state: RootState) => state.tasks);
   const { users } = useSelector((state: RootState) => state.users);
 
-  const [stats, setStats] = useState({
-    totalProjects: 0,
-    activeTasks: 0,
-    completedTasks: 0,
-    teamMembers: 0
-  });
-
   // Modal State for Work Logs
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -44,29 +37,33 @@ const Dashboard = () => {
   const isManager = user?.role === 'manager' || user?.role === 'admin';
   const loading = projectsLoading || tasksLoading;
 
-  // Filter projects and tasks for the user
-  const myProjects = projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id);
-  const allProjects = projects;
-  
-  // userTasks should only contain tasks from projects the user is assigned to
-  const myProjectIds = myProjects.map(p => p._id);
-  const userTasks = tasks.filter(t => 
-    myProjectIds.includes(t.project?._id || t.project) || 
-    (t.assignee?._id || t.assignee) === user?._id
+  // Filter projects and tasks for the user using useMemo to avoid infinite loops
+  const myProjects = useMemo(() => 
+    projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id),
+    [projects, user]
   );
 
-  useEffect(() => {
-    // For regular users, team members are the unique set of people they work with across all projects
+  const allProjects = projects;
+  
+  const userTasks = useMemo(() => {
+    const myProjectIds = myProjects.map(p => p._id);
+    return tasks.filter(t => 
+      myProjectIds.includes(t.project?._id || t.project) || 
+      (t.assignee?._id || t.assignee) === user?._id
+    );
+  }, [tasks, myProjects, user]);
+
+  const stats = useMemo(() => {
     const relevantTeamMembers = isManager 
       ? users.length 
       : new Set(myProjects.flatMap(p => p.members?.map((m: any) => m?._id || m) || [])).size;
 
-    setStats({
+    return {
       totalProjects: myProjects.length,
       activeTasks: userTasks.filter((t: any) => t.status !== 'done').length,
       completedTasks: userTasks.filter((t: any) => t.status === 'done').length,
       teamMembers: relevantTeamMembers || 0
-    });
+    };
   }, [myProjects, userTasks, users, isManager]);
 
   const taskStats = [
@@ -176,7 +173,7 @@ const Dashboard = () => {
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.1)', padding: '0.25rem 0.6rem', borderRadius: '20px' }}>+12%</span>
           </div>
           <h3 style={{ fontSize: '2.25rem', marginBottom: '0.25rem', fontWeight: 800 }}>{stats.totalProjects}</h3>
-          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{isManager ? 'Active Projects' : 'Assigned Projects'}</p>
+          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Assigned Projects</p>
         </div>
 
         <div className="card" style={{ border: 'none', background: 'var(--card-bg)', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
@@ -291,7 +288,7 @@ const Dashboard = () => {
           {/* Tasks Section */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{isManager ? 'Global Tasks' : 'My Current Tasks'}</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>My Current Tasks</h3>
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -317,7 +314,6 @@ const Dashboard = () => {
                           style={{ border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 700, padding: '0.4rem 1rem' }}
                           value={task.status}
                           onChange={(e) => handleStatusUpdate(task._id, e.target.value)}
-                          disabled={isManager}
                         >
                           <option value="todo">To Do</option>
                           <option value="in-progress">In Progress</option>
@@ -362,15 +358,13 @@ const Dashboard = () => {
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '12px', textAlign: 'center' }}>No progress updates logged yet.</p>
                       )}
                       
-                      {!isManager && (
-                        <button 
-                          onClick={() => openWorkLogModal(task._id)}
-                          style={{ marginTop: '1rem', background: 'rgba(99, 102, 241, 0.05)', border: '1px dashed var(--primary)', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', padding: '0.75rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', transition: 'all 0.2s' }}
-                          className="hover-primary-bg"
-                        >
-                          <Plus size={16} /> Add Progress Update
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => openWorkLogModal(task._id)}
+                        style={{ marginTop: '1rem', background: 'rgba(99, 102, 241, 0.05)', border: '1px dashed var(--primary)', color: 'var(--primary)', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', padding: '0.75rem 1.25rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', transition: 'all 0.2s' }}
+                        className="hover-primary-bg"
+                      >
+                        <Plus size={16} /> Add Progress Update
+                      </button>
                     </div>
                     
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
@@ -384,14 +378,12 @@ const Dashboard = () => {
                           {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'N/A'}
                         </span>
                       </div>
-                      {isManager && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div style={{ width: '24px', height: '24px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>
-                            {task.assignee?.name?.charAt(0) || '?'}
-                          </div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{task.assignee?.name || 'Unassigned'}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '24px', height: '24px', background: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem', fontWeight: 800 }}>
+                          {task.assignee?.name?.charAt(0) || '?'}
                         </div>
-                      )}
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{task.assignee?.name || 'Unassigned'}</span>
+                      </div>
                     </div>
                   </div>
                 ))
