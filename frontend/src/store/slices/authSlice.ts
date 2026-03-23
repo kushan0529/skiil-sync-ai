@@ -19,10 +19,15 @@ interface AuthState {
   error: string | null;
 }
 
+const token = localStorage.getItem('token');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
 const initialState: AuthState = {
   user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: token,
+  isAuthenticated: !!token,
   loading: true,
   error: null,
 };
