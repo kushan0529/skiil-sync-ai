@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    target: 'es2015',
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
   },

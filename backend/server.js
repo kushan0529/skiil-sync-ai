@@ -8,7 +8,11 @@ const server = http.createServer(app);
 
 const { Server } = require('socket.io');
 const io = new Server(server, {
-  cors: { origin: process.env.FRONTEND_URL || '*' }
+  cors: { 
+    origin: process.env.FRONTEND_URL || '*', 
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true 
+  }
 });
 
 app.set('io', io);

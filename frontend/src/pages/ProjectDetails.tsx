@@ -11,7 +11,11 @@ import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import DeadlineWarning from '../components/DeadlineWarning';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040');
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040', {
+  reconnectionAttempts: 5,
+  transports: ['websocket', 'polling'], // Prioritize websocket for stability if possible
+  timeout: 10000,
+});
 
 const ProjectDetails = () => {
   const { id } = useParams();
