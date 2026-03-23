@@ -13,7 +13,7 @@ import DeadlineWarning from '../components/DeadlineWarning';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040', {
   reconnectionAttempts: 5,
-  transports: ['websocket', 'polling'], // Prioritize websocket for stability if possible
+  transports: ['polling', 'websocket'], // Prioritize polling for Vercel compatibility
   timeout: 10000,
 });
 

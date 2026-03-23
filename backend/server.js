@@ -12,7 +12,9 @@ const io = new Server(server, {
     origin: process.env.FRONTEND_URL || '*', 
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true 
-  }
+  },
+  transports: ['polling', 'websocket'], // Ensure backend supports both
+  allowEIO3: true // Backward compatibility if needed
 });
 
 app.set('io', io);
