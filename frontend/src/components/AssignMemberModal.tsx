@@ -95,10 +95,10 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, require
                   key={user._id} 
                   onClick={() => toggleMember(user._id)}
                   style={{ 
-                    padding: '1rem', 
+                    padding: '1.25rem', 
                     display: 'flex', 
                     alignItems: 'center', 
-                    gap: '1rem',
+                    gap: '1.25rem',
                     cursor: 'pointer',
                     background: selectedMembers.includes(user._id) ? 'var(--primary)' : 'var(--bg)',
                     color: selectedMembers.includes(user._id) ? 'white' : 'inherit',
@@ -108,32 +108,40 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, require
                   }}
                 >
                   <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
-                    borderRadius: '50%', 
-                    background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--bg-secondary)',
+                    width: '48px', 
+                    height: '48px', 
+                    borderRadius: '12px', 
+                    background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.25)' : 'var(--bg-secondary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1rem',
-                    fontWeight: 700
+                    fontSize: '1.25rem',
+                    fontWeight: 800,
+                    flexShrink: 0
                   }}>
                     {user.name.charAt(0)}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{user.name}</div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '0.5rem' }}>{user.role}</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.1rem' }}>{user.name}</div>
+                    <div style={{ fontSize: '0.8rem', opacity: 0.85, fontWeight: 500 }}>{user.role}</div>
                     {matchedSkills.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
                         {matchedSkills.map((s: string) => (
-                          <span key={s} style={{ fontSize: '0.65rem', background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--success)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                          <span key={s} style={{ 
+                            fontSize: '0.65rem', 
+                            background: selectedMembers.includes(user._id) ? 'rgba(255,255,255,0.2)' : 'var(--success)', 
+                            color: 'white', 
+                            padding: '0.1rem 0.4rem', 
+                            borderRadius: '4px',
+                            fontWeight: 600
+                          }}>
                             {s}
                           </span>
                         ))}
                       </div>
                     )}
                   </div>
-                  {selectedMembers.includes(user._id) && <CheckCircle2 size={24} />}
+                  {selectedMembers.includes(user._id) && <CheckCircle2 size={28} />}
                 </div>
               );
             })}

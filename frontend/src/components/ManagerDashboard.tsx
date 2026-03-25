@@ -280,25 +280,26 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                 boxShadow: 'none',
                 background: 'var(--bg)'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                   <div style={{ 
-                    width: '40px', 
-                    height: '40px', 
+                    width: '48px', 
+                    height: '48px', 
                     background: 'var(--primary)', 
                     color: 'white', 
                     borderRadius: '12px', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    fontSize: '1rem', 
-                    fontWeight: 700,
-                    boxShadow: '0 2px 8px rgba(99, 102, 241, 0.2)'
+                    fontSize: '1.25rem', 
+                    fontWeight: 800,
+                    boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+                    flexShrink: 0
                   }}>
                     {dev.name.charAt(0)}
                   </div>
-                  <div>
-                    <div style={{ fontSize: '1rem', fontWeight: 700 }}>{dev.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{dev.role}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.01em', marginBottom: '0.1rem' }}>{dev.name}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>{dev.role}</div>
                     
                     {/* Skills Highlighting */}
                     {dev.skills && dev.skills.length > 0 && (

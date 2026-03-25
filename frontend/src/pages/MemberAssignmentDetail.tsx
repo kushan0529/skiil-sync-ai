@@ -110,11 +110,13 @@ const MemberAssignmentDetail = () => {
   return (
     <div className="fade-in" style={{ maxWidth: '1000px', margin: '0 auto' }}>
       <SkillOverlay skills={extractedSkills} isVisible={showSkills} />
-      <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button onClick={() => navigate('/manager')} className="btn btn-outline btn-sm">
+      <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1.5rem' }}>
+        <button onClick={() => navigate('/manager')} className="btn btn-outline btn-sm" style={{ padding: '0.6rem 1.25rem' }}>
           Back to Hub
         </button>
-        <h1 style={{ margin: 0 }}>Member Assignment: {member?.name}</h1>
+        <h1 style={{ margin: 0, fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.04em' }}>
+          Assign Member: <span style={{ color: 'var(--primary)', textShadow: '0 2px 10px rgba(99, 102, 241, 0.1)' }}>{member?.name}</span>
+        </h1>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
