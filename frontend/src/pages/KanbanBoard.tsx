@@ -3,7 +3,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { Plus, MoreVertical, Calendar, Briefcase, UserPlus, GripVertical } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { fetchAllTasks, updateTask } from '../store/slices/taskSlice';
+import { fetchAllTasks, updateTask, updateTaskStatusInState, updateTaskProgressInState } from '../store/slices/taskSlice';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { useAuth } from '../context/AuthContext';
 
@@ -31,6 +31,9 @@ const KanbanBoard = () => {
 
     const newStatus = destination.droppableId as 'todo' | 'in-progress' | 'done';
     
+    // Optimistic update
+    dispatch(updateTaskStatusInState({ taskId: draggableId, status: newStatus }));
+
     dispatch(updateTask({ 
       taskId: draggableId, 
       taskData: { status: newStatus } 
@@ -38,13 +41,16 @@ const KanbanBoard = () => {
   };
 
   const handleProgressChange = (taskId: string, newProgress: number) => {
-    const currentTask = tasks.find(t => t._id === taskId);
+    const currentTask = tasks.find(t => t && t._id === taskId);
     if (!currentTask) return;
 
     let newStatus = currentTask.status;
     if (newProgress === 100) newStatus = 'done';
     else if (newProgress > 0 && currentTask.status === 'todo') newStatus = 'in-progress';
     else if (newProgress === 0 && currentTask.status === 'in-progress') newStatus = 'todo';
+
+    // Optimistic update
+    dispatch(updateTaskProgressInState({ taskId, progress: newProgress, status: newStatus }));
 
     dispatch(updateTask({ 
       taskId, 

@@ -87,6 +87,19 @@ const taskSlice = createSlice({
       const projectTask = state.projectTasks.find(t => t._id === taskId);
       if (projectTask) projectTask.status = status as any;
     },
+    updateTaskProgressInState: (state, action: PayloadAction<{ taskId: string; progress: number; status: string }>) => {
+      const { taskId, progress, status } = action.payload;
+      const task = state.tasks.find(t => t._id === taskId);
+      if (task) {
+        task.progress = progress;
+        task.status = status as any;
+      }
+      const projectTask = state.projectTasks.find(t => t._id === taskId);
+      if (projectTask) {
+        projectTask.progress = progress;
+        projectTask.status = status as any;
+      }
+    },
     addWorkLogToState: (state, action: PayloadAction<{ taskId: string; log: any }>) => {
       const { taskId, log } = action.payload;
       const task = state.tasks.find(t => t._id === taskId);

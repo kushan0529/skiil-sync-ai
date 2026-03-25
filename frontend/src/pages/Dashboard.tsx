@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { fetchProjects } from '../store/slices/projectSlice';
-import { fetchAllTasks, updateTask } from '../store/slices/taskSlice';
+import { fetchAllTasks, updateTask, updateTaskStatusInState } from '../store/slices/taskSlice';
 import { fetchUsers } from '../store/slices/userSlice';
 import { Plus, Briefcase, CheckCircle2, Clock, Users, ArrowRight, Activity, Calendar, ListTodo, AlertCircle, Send, LayoutDashboard, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -89,6 +89,9 @@ const Dashboard = () => {
 
 
   const handleStatusUpdate = (taskId: string, newStatus: string) => {
+    // Optimistic update
+    dispatch(updateTaskStatusInState({ taskId, status: newStatus }));
+
     dispatch(updateTask({ taskId, taskData: { status: newStatus } }));
   };
 

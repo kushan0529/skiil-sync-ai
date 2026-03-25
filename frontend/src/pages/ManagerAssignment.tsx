@@ -39,14 +39,13 @@ const ManagerAssignment = () => {
       setSuccessMessage('Manager account approved successfully.');
       dispatch(fetchUsers());
       dispatch(fetchProjects());
-      
-      // Auto-clear success message after 5 seconds
-      setTimeout(() => setSuccessMessage(''), 5000);
+
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Failed to approve manager');
     }
   };
-
   useEffect(() => {
     dispatch(fetchProjects());
     dispatch(fetchUsers());
@@ -56,7 +55,7 @@ const ManagerAssignment = () => {
     setSuccessMessage(msg);
     dispatch(fetchProjects());
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => setSuccessMessage(''), 5000);
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleDeleteProject = async () => {

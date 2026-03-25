@@ -326,39 +326,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                   <div style={{ position: 'relative' }}>
-                     <input 
-                       type="file" 
-                       id={`resume-${dev._id}`}
-                       style={{ display: 'none' }}
-                       accept=".pdf"
-                       onChange={(e) => handleResumeUpload(e, dev._id)}
-                       disabled={!!parsingUserId}
-                     />
-                     <label 
-                       htmlFor={`resume-${dev._id}`}
-                       className="btn btn-outline btn-sm"
-                       style={{ 
-                         padding: '0.4rem 0.75rem', 
-                         fontSize: '0.75rem', 
-                         display: 'flex', 
-                         alignItems: 'center', 
-                         gap: '0.4rem',
-                         cursor: !!parsingUserId ? 'not-allowed' : 'pointer',
-                         background: 'var(--bg)',
-                         color: 'var(--primary)',
-                         borderColor: 'rgba(99, 102, 241, 0.3)'
-                       }}
-                     >
-                       {parsingUserId === dev._id ? (
-                         <Loader2 size={14} className="animate-spin" />
-                       ) : (
-                         <Upload size={14} />
-                       )}
-                       {parsingUserId === dev._id ? 'Parsing...' : 'Quick Parse'}
-                     </label>
-                   </div>
-                   <button 
+                   <button
                      onClick={() => navigate(`/manager/assign/${dev._id}`)}
                      className="btn btn-outline btn-sm"
                      style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -366,7 +334,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                      <FileSearch size={14} /> Analyze
                    </button>
                    {(isAdmin || currentUser?.role === 'manager') && (
-                     <button 
+                     <button
                        onClick={() => {
                          setUserToDelete(dev);
                          setIsUserDeleteModalOpen(true);
@@ -378,11 +346,11 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                        <Trash2 size={14} />
                      </button>
                    )}
-                   <span style={{ 
-                       fontSize: '0.75rem', 
-                       background: 'rgba(22, 163, 163, 0.1)', 
-                       color: 'var(--success)', 
-                       padding: '0.3rem 0.75rem', 
+                   <span style={{
+                       fontSize: '0.75rem',
+                       background: 'rgba(22, 163, 163, 0.1)',
+                       color: 'var(--success)',
+                       padding: '0.3rem 0.75rem',
                        borderRadius: '50px',
                        fontWeight: 600,
                        border: '1px solid rgba(22, 163, 163, 0.2)'
@@ -390,6 +358,7 @@ const ManagerDashboard = ({ onSuccess }: ManagerDashboardProps) => {
                         Available
                     </span>
                 </div>
+
               </div>
             ))}
           </div>

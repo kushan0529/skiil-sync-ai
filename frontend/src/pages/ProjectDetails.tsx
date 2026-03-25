@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { fetchProjectById, clearCurrentProject, updateProject } from '../store/slices/projectSlice';
-import { fetchTasksByProjectId, updateTask, deleteTask } from '../store/slices/taskSlice';
+import { fetchTasksByProjectId, updateTask, deleteTask, updateTaskProgressInState } from '../store/slices/taskSlice';
 import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
 import CreateTaskModal from '../components/CreateTaskModal';
@@ -32,7 +32,7 @@ const ProjectDetails = () => {
   const handleTaskSuccess = (msg: string) => {
     setSuccessMsg(msg);
     if (id) dispatch(fetchTasksByProjectId(id));
-    setTimeout(() => setSuccessMsg(''), 5000);
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const toggleTaskCompletion = async (task: any) => {
@@ -41,6 +41,9 @@ const ProjectDetails = () => {
     const newProgress = isNowDone ? 100 : 0;
 
     if (!id) return;
+
+    // Optimistic update for task status and progress
+    dispatch(updateTaskProgressInState({ taskId: task._id, progress: newProgress, status: newStatus }));
 
     try {
       await dispatch(updateTask({ 
@@ -68,6 +71,9 @@ const ProjectDetails = () => {
     let newStatus = 'todo';
     if (newProgress === 100) newStatus = 'done';
     else if (newProgress > 0) newStatus = 'in-progress';
+
+    // Optimistic update
+    dispatch(updateTaskProgressInState({ taskId, progress: newProgress, status: newStatus }));
 
     dispatch(updateTask({ 
       taskId, 
@@ -112,7 +118,7 @@ const ProjectDetails = () => {
       dispatch(fetchProjectById(id));
       dispatch(fetchTasksByProjectId(id));
     }
-    setTimeout(() => setSuccessMsg(''), 5000);
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const handleDeleteTaskAction = async (taskId: string, taskTitle: string) => {
