@@ -13,7 +13,13 @@ const errorMiddleware = require('./middleware/error.middleware');
 const app = express();
 
 
-connectDB(process.env.MONGO_URL);
+if (!process.env.MONGO_URL) {
+  console.error('[error] Missing MONGO_URL in environment variables');
+} else {
+  connectDB(process.env.MONGO_URL).catch(err => {
+    console.error('[error] MongoDB initial connection failed:', err.message);
+  });
+}
 
 // Middlewares
 app.use(cors());

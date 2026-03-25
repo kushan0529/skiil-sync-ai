@@ -9,7 +9,7 @@ exports.createTask = async (req, res, next) => {
       io.to(task.project.toString()).emit('taskUpdate', { type: 'created', task });
       io.emit('globalUpdate', { type: 'taskCreated', taskId: task._id });
     }
-    res.json(task);
+    res.json({ task });
   } catch (err) {
     next(err);
   }
@@ -47,7 +47,7 @@ exports.getTask = async (req, res, next) => {
   try{
     const task = await Task.findById(req.params.id).populate('assignee', 'name');
     if (!task) return res.status(404).json({ error: 'Task not found' });
-    res.json(task);
+    res.json({ task });
   } catch (err) {
     next(err);
   }
@@ -76,7 +76,7 @@ exports.updateTask = async (req, res, next) => {
       }
       io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
     }
-    res.json(updatedTask);
+    res.json({ task: updatedTask });
   } catch (err) {
     next(err);
   }
@@ -94,7 +94,7 @@ exports.listByProject = async (req, res, next) => {
 exports.assignee = async (req, res, next) => {
   try {
     const task = await Task.findByIdAndUpdate(req.params.id, { assignee: req.body.userId }, { new: true });
-    res.json(task);
+    res.json({ task });
   } catch (err) {
     next(err);
   }

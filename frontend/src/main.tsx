@@ -6,7 +6,8 @@ import App from './App'
 import './styles/global.css'
 import axios from 'axios';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4040';
+const API_URL = import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:4040' : '');
+axios.defaults.baseURL = API_URL;
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <Provider store={store}>

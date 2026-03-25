@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { io } from 'socket.io-client';
 import DeadlineWarning from '../components/DeadlineWarning';
 
-const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040', {
+const socket = io(import.meta.env.VITE_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:4040' : window.location.origin), {
   reconnectionAttempts: 5,
   transports: ['polling', 'websocket'], // Prioritize polling for Vercel compatibility
   timeout: 10000,
@@ -49,9 +49,9 @@ const ProjectDetails = () => {
       }));
       
       // Calculate project progress
-      const otherTasks = tasks.filter(t => t._id !== task._id);
+      const otherTasks = tasks.filter(t => t && t._id !== task._id);
       const allTasks = [...otherTasks, { ...task, status: newStatus }];
-      const completedCount = allTasks.filter(t => t.status === 'done').length;
+      const completedCount = allTasks.filter(t => t && t.status === 'done').length;
       const totalCount = allTasks.length;
       const projectProgress = Math.round((completedCount / totalCount) * 100);
 

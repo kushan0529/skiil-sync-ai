@@ -159,25 +159,7 @@ const AuthPage = () => {
           </p>
         </div>
 
-        {/* Professional Sliding Toggle */}
-        <div style={{ 
-          background: 'rgba(255,255,255,0.03)', borderRadius: '16px', padding: '4px', 
-          display: 'flex', marginBottom: '2.5rem', border: '1px solid rgba(255,255,255,0.06)'
-        }}>
-          <button onClick={() => { setIsLogin(true); navigate('/login'); }} style={{ 
-            flex: 1, padding: '12px', border: 'none', borderRadius: '12px',
-            background: isLogin ? 'white' : 'transparent',
-            color: isLogin ? '#0a0a0c' : 'rgba(255,255,255,0.4)', 
-            fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}>Sign In</button>
-          <button onClick={() => { setIsLogin(false); navigate('/register'); }} style={{ 
-            flex: 1, padding: '12px', border: 'none', borderRadius: '12px',
-            background: !isLogin ? 'white' : 'transparent',
-            color: !isLogin ? '#0a0a0c' : 'rgba(255,255,255,0.4)', 
-            fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}>Register</button>
-        </div>
-
+        {/* Normal Toggle Links at Bottom */}
         <form onSubmit={isLogin ? handleLogin : handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {error && (
             <div className="fade-in" style={{ color: '#fca5a5', fontSize: '0.875rem', textAlign: 'left', background: 'rgba(239, 68, 68, 0.08)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -240,6 +222,23 @@ const AuthPage = () => {
             {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
             {!loading && <ArrowRight size={20} />}
           </button>
+
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.9rem' }}>
+              {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
+              <button 
+                type="button"
+                onClick={() => {
+                  const newIsLogin = !isLogin;
+                  setIsLogin(newIsLogin);
+                  navigate(newIsLogin ? '/login' : '/register');
+                }} 
+                style={{ background: 'none', border: 'none', color: '#6366f1', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+              >
+                {isLogin ? 'Register' : 'Sign In'}
+              </button>
+            </p>
+          </div>
         </form>
 
         <div style={{ marginTop: '3.5rem', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '2rem' }}>

@@ -39,17 +39,17 @@ const Dashboard = () => {
 
   // Filter projects and tasks for the user using useMemo to avoid infinite loops
   const myProjects = useMemo(() => 
-    projects.filter(p => p.members?.some((m: any) => (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id),
+    projects.filter(p => p && (p.members?.some((m: any) => m && (m?._id || m) === user?._id) || (p.owner?._id || p.owner) === user?._id)),
     [projects, user]
   );
 
-  const allProjects = projects;
+  const allProjects = projects.filter(p => p);
   
   const userTasks = useMemo(() => {
     const myProjectIds = myProjects.map(p => p._id);
     return tasks.filter(t => 
-      myProjectIds.includes(t.project?._id || t.project) || 
-      (t.assignee?._id || t.assignee) === user?._id
+      t && (myProjectIds.includes(t.project?._id || t.project) || 
+      (t.assignee?._id || t.assignee) === user?._id)
     );
   }, [tasks, myProjects, user]);
 

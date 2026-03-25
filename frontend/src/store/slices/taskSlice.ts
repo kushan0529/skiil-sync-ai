@@ -121,10 +121,12 @@ const taskSlice = createSlice({
         state.tasks.unshift(action.payload);
       })
       .addCase(updateTask.fulfilled, (state, action: PayloadAction<Task>) => {
-        const index = state.tasks.findIndex(t => t._id === action.payload._id);
+        if (!action.payload || !action.payload._id) return;
+        
+        const index = state.tasks.findIndex(t => t && t._id === action.payload._id);
         if (index !== -1) state.tasks[index] = action.payload;
         
-        const projectIndex = state.projectTasks.findIndex(t => t._id === action.payload._id);
+        const projectIndex = state.projectTasks.findIndex(t => t && t._id === action.payload._id);
         if (projectIndex !== -1) state.projectTasks[projectIndex] = action.payload;
       })
       .addCase(deleteTask.fulfilled, (state, action: PayloadAction<string>) => {

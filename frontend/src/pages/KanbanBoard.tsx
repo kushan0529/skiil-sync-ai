@@ -58,7 +58,7 @@ const KanbanBoard = () => {
     </div>
   );
 
-  const getTasksByStatus = (status: string) => tasks.filter(t => t.status === status);
+  const getTasksByStatus = (status: string) => tasks.filter(t => t && t.status === status);
 
   return (
     <div className="fade-in">
