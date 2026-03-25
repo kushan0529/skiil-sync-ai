@@ -149,5 +149,5 @@ const taskSlice = createSlice({
   },
 });
 
-export const { updateTaskStatusInState, addWorkLogToState } = taskSlice.actions;
+export const { updateTaskStatusInState, updateTaskProgressInState, addWorkLogToState } = taskSlice.actions;
 export default taskSlice.reducer;
