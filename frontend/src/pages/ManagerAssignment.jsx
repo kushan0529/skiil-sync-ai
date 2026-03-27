@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProjects, deleteProject as deleteProjectThunk } from "../store/slices/projectSlice";
-import { fetchUsers } from "../store/slices/userSlice";
+import { fetchUsers, approveUserInState } from "../store/slices/userSlice";
 import { Users, Briefcase, Search, ArrowRight, CheckCircle2, Trash2, AlertTriangle, X, UserPlus } from "lucide-react";
 import ManagerDashboard from "../components/ManagerDashboard";
 import { useAuth } from "../context/AuthContext";
@@ -25,6 +25,7 @@ const ManagerAssignment = () => {
   const pendingManagers = users.filter((u) => u.role === "manager" && !u.isApproved);
   const handleApproveManager = async (userId) => {
     try {
+      dispatch(approveUserInState(userId));
       await axios.put(`/api/users/${userId}/approve`);
       setSuccessMessage("Manager account approved successfully.");
       dispatch(fetchUsers());
@@ -32,6 +33,7 @@ const ManagerAssignment = () => {
       setTimeout(() => setSuccessMessage(""), 3e3);
     } catch (err) {
       console.error("Failed to approve manager");
+      dispatch(fetchUsers());
     }
   };
   useEffect(() => {

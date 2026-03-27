@@ -16,7 +16,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSuccess }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
+  useEffect(() => { 
     if (isOpen) {
       fetchUsers();
     }

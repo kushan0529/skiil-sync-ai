@@ -23,7 +23,4 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     margin: "0 auto"
   }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", borderBottom: "1px solid var(--border)", paddingBottom: "1rem" }}><h2 style={{ fontSize: "1.25rem", margin: 0 }}>{title}</h2><button onClick={onClose} style={{ color: "var(--text-muted)" }}><X size={24} /></button></div>{children}</div></div>;
 };
-var stdin_default = Modal;
-export {
-  stdin_default as default
-};
+export default Modal;

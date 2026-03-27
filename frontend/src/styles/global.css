@@ -332,8 +332,8 @@ p { margin-bottom: 1rem; color: var(--text-muted); }
 
 /* AI Chat Widget */
 .ai-widget {
-  position: fixed;
-  bottom: 2rem;
+  position: absolute;
+  top: 2rem;
   right: 2rem;
   z-index: 100;
 }

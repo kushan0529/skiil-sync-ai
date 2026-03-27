@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, X, Send } from "lucide-react";
+import { MessageSquare, X, Send, FileX } from "lucide-react";
 import axios from "axios";
 const AIChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,8 +31,8 @@ const AIChatWidget = () => {
   return <>{!isOpen && <div className="ai-widget"><button className="ai-button" onClick={() => setIsOpen(true)}><MessageSquare size={24} /></button></div>}{isOpen && <div
     className="card glass fade-in"
     style={{
-      position: "fixed",
-      bottom: "2rem",
+      position:'fixed',
+      top: "2rem",
       right: "2rem",
       width: "350px",
       height: "500px",

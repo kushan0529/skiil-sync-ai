@@ -19,6 +19,12 @@ const userSlice = createSlice({
   reducers: {
     removeUserFromState: (state, action) => {
       state.users = state.users.filter((user) => user._id !== action.payload);
+    },
+    approveUserInState: (state, action) => {
+      const user = state.users.find((u) => u._id === action.payload);
+      if (user) {
+        user.isApproved = true;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -33,10 +39,11 @@ const userSlice = createSlice({
     });
   }
 });
-const { removeUserFromState } = userSlice.actions;
+const { removeUserFromState, approveUserInState } = userSlice.actions;
 var stdin_default = userSlice.reducer;
 export {
   stdin_default as default,
   fetchUsers,
-  removeUserFromState
+  removeUserFromState,
+  approveUserInState
 };

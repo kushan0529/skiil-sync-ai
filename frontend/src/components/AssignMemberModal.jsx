@@ -94,7 +94,4 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, require
     style={{ padding: "0.75rem 2rem" }}
   >{loading ? "Updating..." : "Save Assignments"}</button></div></div></Modal>;
 };
-var stdin_default = AssignMemberModal;
-export {
-  stdin_default as default
-};
+export default AssignMemberModal

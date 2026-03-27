@@ -12,7 +12,7 @@ exports.getMe = async (req, res, next) => {
 
 exports.listUsers = async (req, res, next) => {
   try {
-    const users = await User.find().select('name email role skills _id');
+    const users = await User.find().select('name email role skills isApproved _id');
     res.json({ users });
   } catch (err) {
     next(err);
