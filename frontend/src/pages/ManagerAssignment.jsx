@@ -90,13 +90,58 @@ const ManagerAssignment = () => {
     dispatch(fetchUsers());
     window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => setSuccessMessage(""), 5e3);
-  }} /></div>{user?.role === "admin" && pendingManagers.length > 0 && <div className="card" style={{ marginBottom: "3rem", border: "2px solid #f59e0b", background: "rgba(245, 158, 11, 0.05)" }}><div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}><AlertTriangle size={24} color="#f59e0b" /><h3 style={{ margin: 0, color: "#b45309" }}>Pending Manager Approvals</h3></div><div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>{pendingManagers.map((m) => <div key={m._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "white", padding: "1rem", borderRadius: "12px", border: "1px solid #fbbf24" }}><div><div style={{ fontWeight: 700 }}>{m.name}</div><div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{m.email}</div></div><button
-    className="btn btn-primary"
-    style={{ background: "#f59e0b", border: "none" }}
-    onClick={() => handleApproveManager(m._id)}
-  >
-                  Approve Manager
-                </button></div>)}</div></div>}<div className="card" style={{ padding: "2rem", boxShadow: "var(--shadow-md)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1.5rem" }}><div><h3 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>Project Inventory</h3><p className="text-muted" style={{ margin: 0 }}>Overview of all active and planning projects</p></div><div style={{ position: "relative" }}><Search size={20} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} /><input
+  }} /></div>      {user?.role === "admin" && pendingManagers.length > 0 && (
+        <div className="card fade-in" style={{ 
+          marginBottom: "3rem", 
+          border: "1px solid #f59e0b", 
+          background: "linear-gradient(to bottom right, rgba(245, 158, 11, 0.08), rgba(251, 191, 36, 0.03))",
+          padding: "2rem",
+          borderRadius: "20px",
+          boxShadow: "0 10px 15px -3px rgba(245, 158, 11, 0.1)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div style={{ background: "#f59e0b", color: "white", padding: "0.5rem", borderRadius: "10px" }}>
+              <AlertTriangle size={24} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, color: "#92400e", fontSize: "1.25rem", fontWeight: 700 }}>Action Required: Manager Approvals</h3>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#b45309" }}>{pendingManagers.length} manager(s) awaiting your verification</p>
+            </div>
+          </div>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {pendingManagers.map((m) => (
+              <div key={m._id} style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                background: "white", 
+                padding: "1.25rem", 
+                borderRadius: "15px", 
+                border: "1px solid rgba(245, 158, 11, 0.2)",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+                    {m.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "1rem" }}>{m.name}</div>
+                    <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{m.email}</div>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-primary"
+                  style={{ background: "#f59e0b", border: "none", padding: "0.6rem 1.25rem", fontWeight: 700, borderRadius: "10px" }}
+                  onClick={() => handleApproveManager(m._id)}
+                >
+                  Confirm Approval
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}<div className="card" style={{ padding: "2rem", boxShadow: "var(--shadow-md)" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2.5rem", flexWrap: "wrap", gap: "1.5rem" }}><div><h3 style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>Project Inventory</h3><p className="text-muted" style={{ margin: 0 }}>Overview of all active and planning projects</p></div><div style={{ position: "relative" }}><Search size={20} style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} /><input
     type="text"
     placeholder="Filter projects by name..."
     value={searchTerm}

@@ -162,9 +162,12 @@ const ManagerDashboard = ({ onSuccess }) => {
     display: "flex",
     flexDirection: "column",
     gap: "0.75rem",
-    maxHeight: "380px",
+    maxHeight: "450px",
     overflowY: "auto",
-    padding: "0.5rem"
+    padding: "0.5rem",
+    background: "rgba(0,0,0,0.02)",
+    borderRadius: "var(--radius)",
+    border: "1px solid var(--border)"
   }}>{developers.map((dev) => <div key={dev._id} className="card" style={{
     padding: "1rem 1.25rem",
     display: "flex",
@@ -172,8 +175,10 @@ const ManagerDashboard = ({ onSuccess }) => {
     justifyContent: "space-between",
     border: "1px solid var(--border)",
     boxShadow: "none",
-    background: "var(--bg)"
-  }}><div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}><div style={{
+    background: "var(--bg)",
+    gap: "1rem",
+    flexWrap: "wrap"
+  }}><div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flex: 1, minWidth: "0" }}><div style={{
     width: "48px",
     height: "48px",
     background: "var(--primary)",
@@ -186,7 +191,16 @@ const ManagerDashboard = ({ onSuccess }) => {
     fontWeight: 800,
     boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
     flexShrink: 0
-  }}>{dev.name.charAt(0)}</div><div style={{ flex: 1 }}><div style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.01em", marginBottom: "0.1rem" }}>{dev.name}</div><div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 500 }}>{dev.role}</div>{
+  }}>{dev.name.charAt(0)}</div><div style={{ flex: 1, minWidth: "0" }}><div style={{ 
+    fontSize: "1.15rem", 
+    fontWeight: 800, 
+    color: "var(--text-main)", 
+    letterSpacing: "-0.01em", 
+    marginBottom: "0.1rem",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  }} title={dev.name}>{dev.name}</div><div style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 500 }}>{dev.role}</div>{
     /* Skills Highlighting */
   }{dev.skills && dev.skills.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.4rem" }}>{dev.skills.slice(0, 3).map((s) => <span key={s} style={{
     fontSize: "0.65rem",
@@ -197,7 +211,7 @@ const ManagerDashboard = ({ onSuccess }) => {
     fontWeight: 600,
     border: "1px solid rgba(99, 102, 241, 0.1)"
   }}>{s}</span>)}{dev.skills.length > 3 && <span style={{ fontSize: "0.65rem", color: "var(--text-muted)", alignSelf: "center" }}>
-                            +{dev.skills.length - 3}</span>}</div>}</div></div><div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}><button
+                            +{dev.skills.length - 3}</span>}</div>}</div></div><div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}><button
     onClick={() => navigate(`/manager/assign/${dev._id}`)}
     className="btn btn-outline btn-sm"
     style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
@@ -217,7 +231,8 @@ const ManagerDashboard = ({ onSuccess }) => {
     padding: "0.3rem 0.75rem",
     borderRadius: "50px",
     fontWeight: 600,
-    border: "1px solid rgba(22, 163, 163, 0.2)"
+    border: "1px solid rgba(22, 163, 163, 0.2)",
+    whiteSpace: "nowrap"
   }}>
                         Available
                     </span></div></div>)}</div></div></div><CreateProjectModal

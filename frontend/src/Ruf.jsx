@@ -13,5 +13,5 @@ const CreateProject=({isOpen,onClose,onSuccess})=>{
         members:[]
     })
     const[users,setUsers]=useState("");
-    const[]=useState("");
+    const[skillInput,setSkillInput]=useState("");
 }

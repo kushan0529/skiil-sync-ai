@@ -333,7 +333,7 @@ p { margin-bottom: 1rem; color: var(--text-muted); }
 /* AI Chat Widget */
 .ai-widget {
   position: absolute;
-  top: 2rem;
+  top: 4rem;
   right: 2rem;
   z-index: 100;
 }

@@ -29,8 +29,8 @@ exports.register = async (req, res, next) => {
 
     if (role === 'admin') {
       const adminCount = await User.countDocuments({ role: 'admin' });
-      if (adminCount >= 2) {
-        return res.status(400).json({ error: 'Maximum number of administrators (2) already reached.' });
+      if (adminCount >= 1) {
+        return res.status(400).json({ error: 'Maximum number of administrators (1) already reached.' });
       }
     }
 
