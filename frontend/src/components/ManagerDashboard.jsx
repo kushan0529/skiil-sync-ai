@@ -138,9 +138,9 @@ const ManagerDashboard = ({ onSuccess }) => {
     display: "flex",
     flexDirection: "column",
     gap: "1rem",
-    maxHeight: "380px",
+    maxHeight: "600px",
     overflowY: "auto",
-    padding: "0.5rem",
+    padding: "0.5rem 0.75rem 0.5rem 0.5rem",
     background: "rgba(0,0,0,0.02)",
     borderRadius: "var(--radius)",
     border: "1px solid var(--border)"
@@ -162,9 +162,9 @@ const ManagerDashboard = ({ onSuccess }) => {
     display: "flex",
     flexDirection: "column",
     gap: "0.75rem",
-    maxHeight: "450px",
+    maxHeight: "600px",
     overflowY: "auto",
-    padding: "0.5rem",
+    padding: "0.5rem 0.75rem 0.5rem 0.5rem",
     background: "rgba(0,0,0,0.02)",
     borderRadius: "var(--radius)",
     border: "1px solid var(--border)"
