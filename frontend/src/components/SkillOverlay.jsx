@@ -8,7 +8,7 @@ const SkillOverlay = ({ skills, isVisible }) => {
     width: "100%",
     height: "100%",
     background: "rgba(0,0,0,0.92)",
-    zIndex: 9999,
+    zIndex: 90,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",

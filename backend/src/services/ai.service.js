@@ -173,7 +173,7 @@ Respond as a Jira-like Virtual Assistant. If the user asks for:
 - Summarization: Summarize progress (based on what they ask).
 - General PM: Provide advice on sprints, backlogs, or blockers.
 
-Keep responses professional, helpful, and formatted for readability. Use bullet points where appropriate.`;
+Keep responses professional, helpful, and formatted for readability. Use bullet points where appropriate., dont make the response too much lengthy , make it clear and smaller in length`;
     
     const resp = await client.chat.completions.create({
       model: RECOMMENDATION_MODEL,

@@ -9,7 +9,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     bottom: 0,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "center",
     zIndex: 1e3,
     backdropFilter: "blur(4px)",

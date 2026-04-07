@@ -9,7 +9,7 @@ exports.assignToBestProject = async (req, res, next) => {
     const targetUserId = req.body.userId || req.user._id;
     const user = await User.findById(targetUserId);
     if (!user) return res.status(404).json({ error: 'User not found' });
-
+      
     // 1. Seed demo projects if they don't exist
     await seedDemoProjects(targetUserId);
 

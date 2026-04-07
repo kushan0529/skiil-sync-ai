@@ -36,7 +36,4 @@ const DeadlineWarning = ({ deadline, status }) => {
   }
   return null;
 };
-var stdin_default = DeadlineWarning;
-export {
-  stdin_default as default
-};
+export default DeadlineWarning;

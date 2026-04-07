@@ -24,7 +24,4 @@ const AppContent = () => {
 function App() {
   return <ThemeProvider><AuthProvider><Router><AppContent /></Router></AuthProvider></ThemeProvider>;
 }
-var stdin_default = App;
-export {
-  stdin_default as default
-};
+export default App;

@@ -11,8 +11,5 @@ const store = configureStore({
     users: userReducer
   }
 });
-var stdin_default = store;
-export {
-  stdin_default as default,
-  store
-};
+export default store;
+ 

@@ -4,13 +4,7 @@ const token = localStorage.getItem("token");
 if (token) {
   axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
-const initialState = {
-  user: null,
-  token,
-  isAuthenticated: !!token,
-  loading: true,
-  error: null
-};
+
 const checkAuth = createAsyncThunk("auth/checkAuth", async (_, { rejectWithValue }) => {
   const token2 = localStorage.getItem("token");
   if (!token2) return null;
@@ -26,7 +20,14 @@ const checkAuth = createAsyncThunk("auth/checkAuth", async (_, { rejectWithValue
 });
 const authSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState:
+  {
+  user: null,
+  token:token,
+  isAuthenticated: !!token,
+  loading: true,
+  error: null
+},
   reducers: {
     loginSuccess: (state, action) => {
       const { token: token2, user } = action.payload;
@@ -65,10 +66,9 @@ const authSlice = createSlice({
   }
 });
 const { loginSuccess, logout, setLoading } = authSlice.actions;
-var stdin_default = authSlice.reducer;
+export default authSlice.reducer;
 export {
   checkAuth,
-  stdin_default as default,
   loginSuccess,
   logout,
   setLoading

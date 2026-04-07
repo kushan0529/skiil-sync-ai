@@ -13,7 +13,4 @@ const Navbar = () => {
                     Matchmaker
                   </NavLink></>}<NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}><User size={20} /></NavLink><button onClick={handleLogout} className="btn btn-outline" title="Logout"><LogOut size={20} /></button></> : <><NavLink to="/login" className="nav-link">Login</NavLink><NavLink to="/register" className="btn btn-primary">Get Started</NavLink></>}</div></div></nav>;
 };
-var stdin_default = Navbar;
-export {
-  stdin_default as default
-};
+export default Navbar
