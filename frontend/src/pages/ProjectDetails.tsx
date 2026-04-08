@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { fetchProjectById, clearCurrentProject } from '../store/slices/projectSlice';
 import { fetchTasksByProjectId, updateTask, deleteTask } from '../store/slices/taskSlice';
-import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, Minus, UserPlus, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import AssignMemberModal from '../components/AssignMemberModal';
 import CreateTaskModal from '../components/CreateTaskModal';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ import DeadlineWarning from '../components/DeadlineWarning';
 
 const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4040', {
   reconnectionAttempts: 5,
-  transports: ['polling', 'websocket'], // Prioritize polling for Vercel compatibility
+  transports: ['polling', 'websocket'],
   timeout: 10000,
 });
 
@@ -61,6 +61,64 @@ const ProjectDetails = () => {
       taskId, 
       taskData: { progress: newProgress, status: newStatus } 
     }));
+  };
+
+  const TaskProgressManager = ({ task, canModify, isManager, user }: any) => {
+    const handleIncrement = () => {
+      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
+      console.log(`Current progress: ${task.progress || 0}% -> Target: ${Math.min((task.progress || 0) + 10, 100)}%`);
+      if (!canModify) return;
+      const nextProgress = Math.min((task.progress || 0) + 10, 100);
+      handleTaskProgressChange(task._id, nextProgress);
+    };
+
+    const handleDecrement = () => {
+      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
+      console.log(`Current progress: ${task.progress || 0}% -> Target: ${Math.max((task.progress || 0) - 10, 0)}%`);
+      if (!canModify) return;
+      const nextProgress = Math.max((task.progress || 0) - 10, 0);
+      handleTaskProgressChange(task._id, nextProgress);
+    };
+
+    const isAssignedToMe = (task.assignee?._id || task.assignee) === user?._id;
+    const canEditProgress = canModify && (isManager || isAssignedToMe);
+
+    return (
+      <div style={{ flex: '0 0 220px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <span style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Task Progress</span>
+          <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.1rem', background: 'rgba(99, 102, 241, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>{task.progress || 0}%</span>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {canEditProgress && (
+            <button 
+              onClick={handleDecrement}
+              className="hover-scale"
+              title="Decrease Progress (10%)"
+              style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.4rem', cursor: 'pointer', color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}
+            >
+              <Minus size={16} />
+            </button>
+          )}
+          
+          <div style={{ flex: 1, height: '10px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' }}></div>
+          </div>
+
+          {canEditProgress && (
+            <button 
+              onClick={handleIncrement}
+              className="hover-scale"
+              title="Increase Progress (10%)"
+              style={{ background: 'var(--primary)', border: 'none', borderRadius: '8px', padding: '0.4rem', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center' }}
+            >
+              <Plus size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -172,39 +230,55 @@ const ProjectDetails = () => {
               <span className="status-badge status-planning" style={{ fontSize: '0.8rem' }}>{tasks.length} Total Tasks</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {tasks.length > 0 ? (
-                tasks.map((task) => (
-                  <div key={task._id} className="card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1.25rem', border: '1px solid var(--border)', boxShadow: 'none', opacity: canModify ? 1 : 0.85 }}>
-                    <button 
-                      onClick={() => canModify && toggleTaskCompletion(task)}
-                      disabled={!canModify}
-                      style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'transform 0.2s', cursor: canModify ? 'pointer' : 'default' }} 
-                      className={canModify ? "hover-scale" : ""}
-                    >
-                      {task.status === 'done' ? <CheckCircle2 size={28} /> : <Circle size={28} />}
-                    </button>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                tasks.map((task: any) => (
+                  <div key={task._id} className="card task-item-container" style={{ 
+                    padding: '1.5rem', 
+                    display: 'flex', 
+                    flexDirection: 'row',
+                    alignItems: 'flex-start', 
+                    gap: '1.5rem', 
+                    border: '1px solid var(--border)', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    opacity: canModify ? 1 : 0.85,
+                    flexWrap: 'wrap'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '100%', paddingTop: '0.25rem' }}>
+                      <button 
+                        onClick={() => canModify && toggleTaskCompletion(task)}
+                        disabled={!canModify}
+                        style={{ color: task.status === 'done' ? 'var(--success)' : 'var(--text-muted)', background: 'transparent', transition: 'all 0.2s', cursor: canModify ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%', border: 'none' }} 
+                        className={canModify ? "hover-scale" : ""}
+                      >
+                        {task.status === 'done' ? <CheckCircle2 size={32} /> : <Circle size={32} />}
+                      </button>
+                    </div>
+                    
+                    <div style={{ flex: '1 1 300px', minWidth: '0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
                         <h4 style={{ 
-                          fontSize: '1.125rem', 
-                          fontWeight: 600, 
-                          marginBottom: '0.4rem', 
+                          fontSize: '1.2rem', 
+                          fontWeight: 700, 
+                          margin: 0,
                           textDecoration: task.status === 'done' ? 'line-through' : 'none', 
-                          color: task.status === 'done' ? 'var(--text-muted)' : 'inherit' 
+                          color: task.status === 'done' ? 'var(--text-muted)' : 'var(--text-main)',
+                          wordBreak: 'break-word'
                         }}>
                           {task.title}
                         </h4>
-                        {task.progress >= 75 && task.progress < 100 && (
-                          <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>High Progress</span>
-                        )}
-                        {task.progress === 100 && (
-                          <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'var(--success)', color: 'white' }}>
-                            <CheckCircle2 size={12} style={{ marginRight: '0.2rem' }} /> Completed
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          {task.progress >= 75 && task.progress < 100 && (
+                            <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem' }}>High Progress</span>
+                          )}
+                          {task.progress === 100 && (
+                            <span className="status-badge status-active" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'var(--success)', color: 'white' }}>
+                              <CheckCircle2 size={12} style={{ marginRight: '0.2rem' }} /> Completed
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                           <Clock size={14} />
                           Due {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'No deadline'}
@@ -219,34 +293,26 @@ const ProjectDetails = () => {
                         </span>
                       </div>
                       <DeadlineWarning deadline={task.deadline} status={task.status} />
-                      <div style={{ maxWidth: '200px', marginTop: '0.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>
-                          <span>Progress</span>
-                          <span>{task.progress || 0}%</span>
-                        </div>
-                        <div style={{ height: '4px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '0.3rem' }}>
-                          <div style={{ width: `${task.progress || 0}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.3s ease' }}></div>
-                        </div>
-                        {canModify && (isManager || (task.assignee?._id || task.assignee) === user?._id) && (
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="100" 
-                            value={task.progress || 0} 
-                            onChange={(e) => handleTaskProgressChange(task._id, parseInt(e.target.value))}
-                            style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--primary)' }}
-                          />
-                        )}
-                      </div>
                     </div>
+
+                    <TaskProgressManager 
+                      task={task} 
+                      canModify={canModify} 
+                      isManager={isManager} 
+                      user={user} 
+                    />
+
                     {isManager && canModify && (
-                      <button 
-                        onClick={() => handleDeleteTaskAction(task._id, task.title)}
-                        style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer' }}
-                        title="Delete Task"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                      <div style={{ alignSelf: 'flex-start' }}>
+                        <button 
+                          onClick={() => handleDeleteTaskAction(task._id, task.title)}
+                          style={{ color: 'var(--error)', background: 'transparent', padding: '0.5rem', borderRadius: '50%', cursor: 'pointer', transition: 'all 0.2s' }}
+                          title="Delete Task"
+                          className="hover-scale"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
                     )}
                     <button style={{ color: 'var(--text-muted)', background: 'transparent', cursor: canModify ? 'pointer' : 'default' }}>
                       <MoreVertical size={20} />

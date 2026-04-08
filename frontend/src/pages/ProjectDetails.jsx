@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchProjectById, clearCurrentProject, updateProject } from "../store/slices/projectSlice";
+import { fetchProjectById, clearCurrentProject } from "../store/slices/projectSlice";
 import { fetchTasksByProjectId, updateTask, deleteTask, updateTaskProgressInState } from "../store/slices/taskSlice";
 import { fetchUsers } from "../store/slices/userSlice";
-import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, UserPlus, Calendar, Sparkles, Trash2, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, Minus, UserPlus, Calendar, Sparkles, Trash2, User } from "lucide-react";
 import AssignMemberModal from "../components/AssignMemberModal";
 import CreateTaskModal from "../components/CreateTaskModal";
 import { useAuth } from "../context/AuthContext";
@@ -73,62 +73,60 @@ const ProjectDetails = () => {
     }));
   };
 
-  const LocalProgressSlider = ({ task, canModify, isManager, user }) => {
-    const [localProgress, setLocalProgress] = useState(task.progress || 0);
-    const [isDragging, setIsDragging] = useState(false);
-
-    useEffect(() => {
-      if (!isDragging) {
-        setLocalProgress(task.progress || 0);
-      }
-    }, [task.progress, isDragging]);
-
-    const handleChange = (e) => {
-      const val = parseInt(e.target.value);
-      setLocalProgress(val);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      if (localProgress !== task.progress) {
-        handleTaskProgressChange(task._id, localProgress);
-      }
-    };
-
-    const handleMouseDown = () => {
-      setIsDragging(true);
+  const TaskProgressManager = ({ task, canModify, isManager, user }) => {
+    const handleIncrement = () => {
       console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
-      console.log(`Current progress in state: ${task.progress}%`);
+      console.log(`Current progress: ${task.progress}% -> Target: ${Math.min((task.progress || 0) + 10, 100)}%`);
+      if (!canModify) return;
+      const nextProgress = Math.min((task.progress || 0) + 10, 100);
+      handleTaskProgressChange(task._id, nextProgress);
     };
 
-    if (!canModify || (!isManager && (task.assignee?._id || task.assignee) !== user?._id)) {
-      return (
-        <div style={{ height: "8px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden" }}>
-          <div style={{ width: `${task.progress || 0}%`, height: "100%", background: "var(--primary)", transition: "width 0.3s ease" }} />
-        </div>
-      );
-    }
+    const handleDecrement = () => {
+      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
+      console.log(`Current progress: ${task.progress}% -> Target: ${Math.max((task.progress || 0) - 10, 0)}%`);
+      if (!canModify) return;
+      const nextProgress = Math.max((task.progress || 0) - 10, 0);
+      handleTaskProgressChange(task._id, nextProgress);
+    };
+
+    const isAssignedToMe = (task.assignee?._id || task.assignee) === user?._id;
+    const canEditProgress = canModify && (isManager || isAssignedToMe);
 
     return (
-      <div style={{ flex: "0 0 220px", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-          <span style={{ fontWeight: 600 }}>Progress</span>
-          <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "1rem" }}>{localProgress}%</span>
+      <div style={{ flex: "0 0 220px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+          <span style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>Task Progress</span>
+          <span style={{ fontWeight: 800, color: "var(--primary)", fontSize: "1.1rem", background: "rgba(99, 102, 241, 0.1)", padding: "0.2rem 0.6rem", borderRadius: "6px" }}>{task.progress || 0}%</span>
         </div>
-        <div style={{ height: "8px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden" }}>
-          <div style={{ width: `${localProgress}%`, height: "100%", background: "var(--primary)", transition: isDragging ? "none" : "width 0.3s ease" }} />
+        
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {canEditProgress && (
+            <button 
+              onClick={handleDecrement}
+              className="hover-scale"
+              title="Decrease Progress (10%)"
+              style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "8px", padding: "0.4rem", cursor: "pointer", color: "var(--text-main)", display: "flex", alignItems: "center" }}
+            >
+              <Minus size={16} />
+            </button>
+          )}
+          
+          <div style={{ flex: 1, height: "10px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
+            <div style={{ width: `${task.progress || 0}%`, height: "100%", background: "var(--primary)", transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }} />
+          </div>
+
+          {canEditProgress && (
+            <button 
+              onClick={handleIncrement}
+              className="hover-scale"
+              title="Increase Progress (10%)"
+              style={{ background: "var(--primary)", border: "none", borderRadius: "8px", padding: "0.4rem", cursor: "pointer", color: "white", display: "flex", alignItems: "center" }}
+            >
+              <Plus size={16} />
+            </button>
+          )}
         </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          value={localProgress}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onTouchEnd={handleMouseUp}
-          onChange={handleChange}
-          style={{ width: "100%", cursor: "pointer", accentColor: "var(--primary)", marginTop: "0.25rem" }}
-        />
       </div>
     );
   };
@@ -318,7 +316,7 @@ const ProjectDetails = () => {
                     <DeadlineWarning deadline={task.deadline} status={task.status} />
                   </div>
 
-                  <LocalProgressSlider 
+                  <TaskProgressManager 
                     task={task} 
                     canModify={canModify} 
                     isManager={isManager} 
@@ -362,16 +360,6 @@ const ProjectDetails = () => {
                     </div>
                     <span style={{ fontWeight: 700, color: "var(--primary)", minWidth: "40px" }}>{project?.progress || 0}%</span>
                   </div>
-                  {canModify && (
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={project?.progress || 0}
-                      onChange={(e) => handleProjectProgressChange(parseInt(e.target.value))}
-                      style={{ width: "100%", marginTop: "0.75rem", cursor: "pointer", accentColor: "var(--primary)" }}
-                    />
-                  )}
                 </div>
 
                 <div className="input-group" style={{ marginBottom: 0 }}>
