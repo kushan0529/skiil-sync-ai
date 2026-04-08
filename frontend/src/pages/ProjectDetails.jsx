@@ -49,17 +49,6 @@ const ProjectDetails = () => {
         taskId: task._id,
         taskData: { status: newStatus, progress: newProgress }
       }));
-      
-      const otherTasks = tasks.filter((t) => t && t._id !== task._id);
-      const allTasks = [...otherTasks, { ...task, status: newStatus }];
-      const completedCount = allTasks.filter((t) => t && t.status === "done").length;
-      const totalCount = allTasks.length;
-      const projectProgress = Math.round((completedCount / totalCount) * 100);
-
-      dispatch(updateProject({
-        id,
-        projectData: { progress: projectProgress }
-      }));
     } catch (err) {
       console.error("Failed to toggle task completion");
     }
@@ -82,12 +71,6 @@ const ProjectDetails = () => {
       taskId,
       taskData: { assignee: userId }
     }));
-  };
-
-  const handleProjectProgressChange = (newProgress) => {
-    if (id) {
-      dispatch(updateProject({ id, projectData: { progress: newProgress } }));
-    }
   };
 
   useEffect(() => {
