@@ -73,6 +73,66 @@ const ProjectDetails = () => {
     }));
   };
 
+  const LocalProgressSlider = ({ task, canModify, isManager, user }) => {
+    const [localProgress, setLocalProgress] = useState(task.progress || 0);
+    const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+      if (!isDragging) {
+        setLocalProgress(task.progress || 0);
+      }
+    }, [task.progress, isDragging]);
+
+    const handleChange = (e) => {
+      const val = parseInt(e.target.value);
+      setLocalProgress(val);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      if (localProgress !== task.progress) {
+        handleTaskProgressChange(task._id, localProgress);
+      }
+    };
+
+    const handleMouseDown = () => {
+      setIsDragging(true);
+      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
+      console.log(`Current progress in state: ${task.progress}%`);
+    };
+
+    if (!canModify || (!isManager && (task.assignee?._id || task.assignee) !== user?._id)) {
+      return (
+        <div style={{ height: "8px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden" }}>
+          <div style={{ width: `${task.progress || 0}%`, height: "100%", background: "var(--primary)", transition: "width 0.3s ease" }} />
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ flex: "0 0 220px", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+          <span style={{ fontWeight: 600 }}>Progress</span>
+          <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "1rem" }}>{localProgress}%</span>
+        </div>
+        <div style={{ height: "8px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden" }}>
+          <div style={{ width: `${localProgress}%`, height: "100%", background: "var(--primary)", transition: isDragging ? "none" : "width 0.3s ease" }} />
+        </div>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={localProgress}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onTouchEnd={handleMouseUp}
+          onChange={handleChange}
+          style={{ width: "100%", cursor: "pointer", accentColor: "var(--primary)", marginTop: "0.25rem" }}
+        />
+      </div>
+    );
+  };
+
   useEffect(() => {
     dispatch(fetchUsers());
     if (id) {
@@ -258,25 +318,12 @@ const ProjectDetails = () => {
                     <DeadlineWarning deadline={task.deadline} status={task.status} />
                   </div>
 
-                  <div style={{ flex: "0 0 220px", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                      <span style={{ fontWeight: 600 }}>Progress</span>
-                      <span style={{ fontWeight: 700, color: "var(--primary)", fontSize: "1rem" }}>{task.progress || 0}%</span>
-                    </div>
-                    <div style={{ height: "8px", background: "var(--bg-secondary)", borderRadius: "10px", overflow: "hidden" }}>
-                      <div style={{ width: `${task.progress || 0}%`, height: "100%", background: "var(--primary)", transition: "width 0.3s ease" }} />
-                    </div>
-                    {canModify && (isManager || (task.assignee?._id || task.assignee) === user?._id) && (
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={task.progress || 0}
-                        onChange={(e) => handleTaskProgressChange(task._id, parseInt(e.target.value))}
-                        style={{ width: "100%", cursor: "pointer", accentColor: "var(--primary)", marginTop: "0.25rem" }}
-                      />
-                    )}
-                  </div>
+                  <LocalProgressSlider 
+                    task={task} 
+                    canModify={canModify} 
+                    isManager={isManager} 
+                    user={user} 
+                  />
                   
                   {isManager && canModify && (
                     <div style={{ alignSelf: "flex-start" }}>
