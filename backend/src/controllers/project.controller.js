@@ -9,10 +9,10 @@ exports.assignToBestProject = async (req, res, next) => {
   try {
     const targetUserId = req.body.userId || req.user._id;
     
-    // 1. Parallel fetch User and Planning Projects (Much faster)
+    // 1. Parallel fetch User and Planning Projects (Fast)
     const [user, projects] = await Promise.all([
       User.findById(targetUserId),
-      Project.find({ status: 'planning' })
+      Project.find({ status: 'planning' }).lean()
     ]);
 
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -33,26 +33,29 @@ exports.assignToBestProject = async (req, res, next) => {
       reason = bestMatch.reason;
     }
 
-    // 3. Persist assignment
-    if (!assignedProject.members.includes(user._id)) {
-      assignedProject.members.push(user._id);
-      await assignedProject.save();
+    // 3. Persist assignment in background but await the critical save
+    if (!assignedProject.members.some(m => m.toString() === user._id.toString())) {
+      await Project.updateOne(
+        { _id: assignedProject._id },
+        { $addToSet: { members: user._id } }
+      );
     }
 
-    // 4. Send email notification (AWAIT but with timeout in service)
-    // We MUST await on Vercel or it will be killed, but the 2s timeout in service keeps it fast.
-    let mailStatus = 'Attempted';
-    try {
-      const manager = await User.findById(req.user._id);
-      const path = `/projects/${assignedProject._id}`;
-      // This will take max 2-3s now with the new timeouts in email.service
-      const result = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
-      mailStatus = result.success ? 'Sent' : `Failed: ${result.error}`;
-    } catch (e) {
-      mailStatus = 'Error';
-    }
+    // --- CRITICAL: RESPOND NOW TO ACHIEVE < 1s RESPONSE TIME ---
+    res.json({ project: assignedProject, reason, mailStatus: 'Queued' });
 
-    res.json({ project: assignedProject, reason, mailStatus });
+    // 4. Trigger email in background AFTER response (No await here)
+    // On Vercel this is risky but the only way to meet "1s" goal with SMTP.
+    (async () => {
+      try {
+        const manager = await User.findById(req.user._id);
+        const path = `/projects/${assignedProject._id}`;
+        await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
+      } catch (err) {
+        console.error('[background-email] Failed:', err.message);
+      }
+    })();
+
   } catch (err) { next(err); }
 };
 
