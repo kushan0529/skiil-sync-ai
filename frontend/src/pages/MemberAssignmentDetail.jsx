@@ -39,7 +39,7 @@ const MemberAssignmentDetail = () => {
     formData.append("resume", file);
     formData.append("userId", userId);
     setUploading(true);
-    setMessage("Analyzing resume with AI and auto-assigning best project...");
+    setMessage("Analyzing resume with AI...");
     setRecommendations([]);
     try {
       const res = await axios.post("/api/users/upload-resume", formData);
@@ -52,21 +52,9 @@ const MemberAssignmentDetail = () => {
         setTimeout(() => setShowSkills(false), 3e3);
       }
 
-      // Fetch recommendations and directly assign the top one
-      const recRes = await axios.get(`/api/projects/recommend/${userId}`);
-      const recs = recRes.data.recommendations || [];
-      setRecommendations(recs);
-
-      if (recs.length > 0) {
-        const topProject = recs[0].project;
-        await axios.put(`/api/projects/${topProject._id}`, {
-          $addToSet: { members: userId }
-        });
-        setMessage(`Success! Based on skills "${skills.slice(0, 5).join(", ")}...", ${member?.name || res.data.user.name} has been directly assigned to "${topProject.name}".`);
-        setTimeout(() => navigate("/manager"), 5e3);
-      } else {
-        setMessage("Resume parsed, but no matching projects found for auto-assignment.");
-      }
+      // Fetch recommendations but DO NOT auto-assign
+      await fetchRecommendations();
+      setMessage("Resume parsed successfully. Please review the AI recommendations below.");
     } catch (err) {
       const errMsg = err.response?.data?.error || "Failed to upload and analyze resume";
       setMessage(errMsg);

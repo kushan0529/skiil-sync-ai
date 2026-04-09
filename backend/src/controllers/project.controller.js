@@ -3,6 +3,7 @@ const Task = require('../models/Task.model');
 const User = require('../models/User.model');
 const aiService = require('../services/ai.service');
 const { seedDemoProjects } = require('../utils/seedProjects');
+const emailService = require('../services/email.service');
 
 exports.assignToBestProject = async (req, res, next) => {
   try {
@@ -20,6 +21,9 @@ exports.assignToBestProject = async (req, res, next) => {
     // 3. Get AI recommendation
     const recommendations = await aiService.recommendProjects(user, projects);
     
+    let assignedProject = null;
+    let reason = '';
+
     if (recommendations.length === 0) {
       // Fallback: assign to first project if AI fails
       const project = projects[0];
@@ -27,19 +31,31 @@ exports.assignToBestProject = async (req, res, next) => {
         project.members.push(user._id);
         await project.save();
       }
-      return res.json({ project, reason: 'Assigned based on availability' });
+      assignedProject = project;
+      reason = 'Assigned based on availability';
+    } else {
+      // 4. Assign to the best match
+      const bestMatch = recommendations[0];
+      const project = projects[bestMatch.projectIdIndex];
+      
+      if (project && !project.members.includes(user._id)) {
+        project.members.push(user._id);
+        await project.save();
+      }
+      assignedProject = project;
+      reason = bestMatch.reason;
     }
 
-    // 4. Assign to the best match
-    const bestMatch = recommendations[0];
-    const project = projects[bestMatch.projectIdIndex];
-    
-    if (project && !project.members.includes(user._id)) {
-      project.members.push(user._id);
-      await project.save();
+    // Send email notification
+    let mailStatus = null;
+    if (assignedProject) {
+      console.log(`[project.controller] Sending email to ${user.email} for project ${assignedProject.name}`);
+      const manager = await User.findById(req.user._id);
+      const path = `/projects/${assignedProject._id}`;
+      mailStatus = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
     }
 
-    res.json({ project, reason: bestMatch.reason });
+    res.json({ project: assignedProject, reason, mailStatus });
   } catch (err) { next(err); }
 };
 
@@ -67,10 +83,22 @@ exports.createProject = async (req, res, next) => {
       await Task.insertMany(taskDocs);
     }
 
-    let message = 'Project created successfully';
-    
+    // Send emails to all members
+    const mailResults = [];
+    if (members && members.length > 0) {
+      const manager = await User.findById(req.user._id);
+      const path = `/projects/${project._id}`;
+      for (const memberId of members) {
+        const member = await User.findById(memberId);
+        if (member && member.email) {
+          const status = await emailService.sendProjectAssignmentEmail(project, member, manager, path);
+          mailResults.push({ memberId, status });
+        }
+      }
+    }
 
-    res.json({ project, message });
+    let message = 'Project created successfully';
+    res.json({ project, message, mailResults });
   } catch (err) { next(err); }
 };
 
@@ -92,6 +120,7 @@ exports.getProject = async (req, res, next) => {
 
 exports.updateProject = async (req, res, next) => {
   try {
+    console.log(`[project.controller] updateProject called for ${req.params.id}`);
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     
@@ -102,10 +131,38 @@ exports.updateProject = async (req, res, next) => {
     if (!isMember && !isOwner && !isManager) {
       return res.status(403).json({ error: 'Not authorized to update this project' });
     }
-    
+
+    const oldMembers = project.members.map(m => m.toString());
     const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('owner members', '-password');
-    res.json({ project: updatedProject });
-  } catch (err) { next(err); }
+    
+    // Check for new members
+    const mailResults = [];
+    const currentMembers = updatedProject.members.map(m => (m._id || m).toString());
+    const newMembers = currentMembers.filter(mId => !oldMembers.includes(mId));
+
+    console.log(`[project.controller] Member update check: oldCount=${oldMembers.length}, newCount=${currentMembers.length}, addedCount=${newMembers.length}`);
+
+    if (newMembers.length > 0) {
+      const manager = await User.findById(req.user._id);
+      const path = `/projects/${updatedProject._id}`;
+      for (const memberId of newMembers) {
+        console.log(`[project.controller] Processing new member: ${memberId}`);
+        const member = await User.findById(memberId);
+        if (member && member.email) {
+          console.log(`[project.controller] Found member email: ${member.email}. Triggering email service...`);
+          const status = await emailService.sendProjectAssignmentEmail(updatedProject, member, manager, path);
+          mailResults.push({ memberId, status });
+        } else {
+          console.warn(`[project.controller] No email found for user ${memberId}`);
+        }
+      }
+    }
+
+    res.json({ project: updatedProject, mailResults });
+  } catch (err) { 
+    console.error(`[project.controller] Error in updateProject:`, err);
+    next(err); 
+  }
 };
 
 exports.deleteProject = async (req, res, next) => {
