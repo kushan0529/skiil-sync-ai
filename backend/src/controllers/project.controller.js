@@ -47,15 +47,17 @@ exports.assignToBestProject = async (req, res, next) => {
     }
 
     // Send email notification
-    let mailStatus = null;
     if (assignedProject) {
-      console.log(`[project.controller] Sending email to ${user.email} for project ${assignedProject.name}`);
-      const manager = await User.findById(req.user._id);
-      const path = `/projects/${assignedProject._id}`;
-      mailStatus = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
+      console.log(`[project.controller] Triggering background email to ${user.email} for project ${assignedProject.name}`);
+      User.findById(req.user._id).then(manager => {
+        const path = `/projects/${assignedProject._id}`;
+        emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path)
+          .then(status => console.log(`[project.controller] Background email status:`, status))
+          .catch(err => console.error(`[project.controller] Background email error:`, err));
+      });
     }
 
-    res.json({ project: assignedProject, reason, mailStatus });
+    res.json({ project: assignedProject, reason, mailStatus: 'Email triggered in background' });
   } catch (err) { next(err); }
 };
 

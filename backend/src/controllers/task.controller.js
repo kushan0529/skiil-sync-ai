@@ -12,18 +12,24 @@ exports.createTask = async (req, res, next) => {
       io.emit('globalUpdate', { type: 'taskCreated', taskId: task._id });
     }
 
-    // Send email if assigned
-    let mailStatus = null;
+    // Send email if assigned (Non-blocking)
     if (task.assignee) {
-      const assignee = await User.findById(task.assignee);
-      const manager = await User.findById(req.user._id);
-      if (assignee && manager) {
-        const path = task.project ? `/projects/${task.project}` : '';
-        mailStatus = await emailService.sendTaskAssignmentEmail(task, assignee, manager, path);
-      }
+      const currentUserId = req.user._id;
+      const path = task.project ? `/projects/${task.project}` : '';
+      
+      Promise.all([
+        User.findById(task.assignee),
+        User.findById(currentUserId)
+      ]).then(([assignee, manager]) => {
+        if (assignee && manager) {
+          emailService.sendTaskAssignmentEmail(task, assignee, manager, path)
+            .then(status => console.log(`[task.controller] Background email status:`, status))
+            .catch(err => console.error(`[task.controller] Background email error:`, err));
+        }
+      }).catch(err => console.error(`[task.controller] Error fetching users for background email:`, err));
     }
 
-    res.json({ task, mailStatus });
+    res.json({ task, mailStatus: 'Email triggered in background' });
   } catch (err) {
     next(err);
   }
@@ -84,15 +90,21 @@ exports.updateTask = async (req, res, next) => {
     
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('project assignee');
     
-    // Send email if assignee changed
-    let mailStatus = null;
+    // Send email if assignee changed (Non-blocking)
     if (req.body.assignee && (!oldTask.assignee || oldTask.assignee.toString() !== req.body.assignee.toString())) {
-      const assignee = await User.findById(req.body.assignee);
-      const manager = await User.findById(req.user._id);
-      if (assignee && manager) {
-        const path = updatedTask.project ? `/projects/${updatedTask.project._id}` : '';
-        mailStatus = await emailService.sendTaskAssignmentEmail(updatedTask, assignee, manager, path);
-      }
+      const currentUserId = req.user._id;
+      const path = updatedTask.project ? `/projects/${updatedTask.project._id}` : '';
+      
+      Promise.all([
+        User.findById(req.body.assignee),
+        User.findById(currentUserId)
+      ]).then(([assignee, manager]) => {
+        if (assignee && manager) {
+          emailService.sendTaskAssignmentEmail(updatedTask, assignee, manager, path)
+            .then(status => console.log(`[task.controller] Background update email status:`, status))
+            .catch(err => console.error(`[task.controller] Background update email error:`, err));
+        }
+      }).catch(err => console.error(`[task.controller] Error fetching users for background email update:`, err));
     }
 
     const io_instance = req.app.get('io');
@@ -103,7 +115,7 @@ exports.updateTask = async (req, res, next) => {
       }
       io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
     }
-    res.json({ task: updatedTask, mailStatus });
+    res.json({ task: updatedTask, mailStatus: 'Email triggered in background' });
   } catch (err) {
     next(err);
   }
@@ -123,17 +135,24 @@ exports.assignee = async (req, res, next) => {
     const oldTask = await Task.findById(req.params.id);
     const task = await Task.findByIdAndUpdate(req.params.id, { assignee: req.body.userId }, { new: true }).populate('project');
     
-    let mailStatus = null;
+    // Non-blocking email
     if (req.body.userId && (!oldTask.assignee || oldTask.assignee.toString() !== req.body.userId.toString())) {
-      const assignee = await User.findById(req.body.userId);
-      const manager = await User.findById(req.user._id);
-      if (assignee && manager) {
-        const path = task.project ? `/projects/${task.project._id}` : '';
-        mailStatus = await emailService.sendTaskAssignmentEmail(task, assignee, manager, path);
-      }
+      const currentUserId = req.user._id;
+      const path = task.project ? `/projects/${task.project._id}` : '';
+      
+      Promise.all([
+        User.findById(req.body.userId),
+        User.findById(currentUserId)
+      ]).then(([assignee, manager]) => {
+        if (assignee && manager) {
+          emailService.sendTaskAssignmentEmail(task, assignee, manager, path)
+            .then(status => console.log(`[task.controller] Background assignment email status:`, status))
+            .catch(err => console.error(`[task.controller] Background assignment email error:`, err));
+        }
+      });
     }
 
-    res.json({ task, mailStatus });
+    res.json({ task, mailStatus: 'Email triggered in background' });
   } catch (err) {
     next(err);
   }
