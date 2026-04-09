@@ -8,56 +8,51 @@ const emailService = require('../services/email.service');
 exports.assignToBestProject = async (req, res, next) => {
   try {
     const targetUserId = req.body.userId || req.user._id;
-    const user = await User.findById(targetUserId);
+    
+    // 1. Parallel fetch User and Planning Projects (Much faster)
+    const [user, projects] = await Promise.all([
+      User.findById(targetUserId),
+      Project.find({ status: 'planning' })
+    ]);
+
     if (!user) return res.status(404).json({ error: 'User not found' });
-      
-    // 1. Seed demo projects if they don't exist
-    await seedDemoProjects(targetUserId);
+    if (projects.length === 0) return res.status(404).json({ error: 'No planning projects available' });
 
-    // 2. Find all planning projects
-    const projects = await Project.find({ status: 'planning' });
-    if (projects.length === 0) return res.status(404).json({ error: 'No projects available' });
-
-    // 3. Get AI recommendation
+    // 2. Get AI recommendation (Fast Groq call)
     const recommendations = await aiService.recommendProjects(user, projects);
     
     let assignedProject = null;
     let reason = '';
 
     if (recommendations.length === 0) {
-      // Fallback: assign to first project if AI fails
-      const project = projects[0];
-      if (!project.members.includes(user._id)) {
-        project.members.push(user._id);
-        await project.save();
-      }
-      assignedProject = project;
+      assignedProject = projects[0];
       reason = 'Assigned based on availability';
     } else {
-      // 4. Assign to the best match
       const bestMatch = recommendations[0];
-      const project = projects[bestMatch.projectIdIndex];
-      
-      if (project && !project.members.includes(user._id)) {
-        project.members.push(user._id);
-        await project.save();
-      }
-      assignedProject = project;
+      assignedProject = projects[bestMatch.projectIdIndex] || projects[0];
       reason = bestMatch.reason;
     }
 
-    // Send email notification
-    if (assignedProject) {
-      console.log(`[project.controller] Triggering background email to ${user.email} for project ${assignedProject.name}`);
-      User.findById(req.user._id).then(manager => {
-        const path = `/projects/${assignedProject._id}`;
-        emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path)
-          .then(status => console.log(`[project.controller] Background email status:`, status))
-          .catch(err => console.error(`[project.controller] Background email error:`, err));
-      });
+    // 3. Persist assignment
+    if (!assignedProject.members.includes(user._id)) {
+      assignedProject.members.push(user._id);
+      await assignedProject.save();
     }
 
-    res.json({ project: assignedProject, reason, mailStatus: 'Email triggered in background' });
+    // 4. Send email notification (AWAIT but with timeout in service)
+    // We MUST await on Vercel or it will be killed, but the 2s timeout in service keeps it fast.
+    let mailStatus = 'Attempted';
+    try {
+      const manager = await User.findById(req.user._id);
+      const path = `/projects/${assignedProject._id}`;
+      // This will take max 2-3s now with the new timeouts in email.service
+      const result = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
+      mailStatus = result.success ? 'Sent' : `Failed: ${result.error}`;
+    } catch (e) {
+      mailStatus = 'Error';
+    }
+
+    res.json({ project: assignedProject, reason, mailStatus });
   } catch (err) { next(err); }
 };
 
