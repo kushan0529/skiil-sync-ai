@@ -2,21 +2,27 @@ const nodemailer = require('nodemailer');
 
 /**
  * Robust Email Service for SkillSync
- * Using 'service: gmail' is generally more reliable in cloud/serverless 
- * environments like Vercel compared to manual host/port config.
+ * Configured specifically for Vercel Serverless environment.
  */
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // use SSL
+  port: 587,
+  secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  connectionTimeout: 10000, // 10 seconds
+  tls: {
+    // Critical for some cloud/datacenter environments
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
+  },
+  connectionTimeout: 5000, // 5 seconds - keep it tight for Vercel
   greetingTimeout: 5000,
-  socketTimeout: 10000,
+  socketTimeout: 5000,
+  debug: true, // Show debug output in Vercel logs
+  logger: true  // Log to console
 });
 
 exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => {
@@ -24,7 +30,7 @@ exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => 
   
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.error('[email] Error: EMAIL_USER or EMAIL_PASS missing in environment');
-    return { success: false, error: 'Credentials missing' };
+    return { success: false, error: 'Credentials missing in Vercel environment' };
   }
 
   if (!assignee || !assignee.email) {
