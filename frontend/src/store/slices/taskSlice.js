@@ -25,7 +25,7 @@ const fetchTasksByProjectId = createAsyncThunk("tasks/fetchTasksByProjectId", as
 const createTask = createAsyncThunk("tasks/createTask", async (taskData, { rejectWithValue }) => {
   try {
     const res = await axios.post("/api/tasks", taskData);
-    return res.data.task;
+    return res.data; // Return full data including mailStatus
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || "Failed to create task");
   }
@@ -33,7 +33,7 @@ const createTask = createAsyncThunk("tasks/createTask", async (taskData, { rejec
 const updateTask = createAsyncThunk("tasks/updateTask", async ({ taskId, taskData }, { rejectWithValue }) => {
   try {
     const res = await axios.put(`/api/tasks/${taskId}`, taskData);
-    return res.data.task;
+    return res.data; // Return full data including mailStatus
   } catch (err) {
     return rejectWithValue(err.response?.data?.error || "Failed to update task");
   }
@@ -62,12 +62,12 @@ const taskSlice = createSlice({
       const task = state.tasks.find((t) => t._id === taskId);
       if (task) {
         task.progress = progress;
-        task.status = status;
+        if (status) task.status = status;
       }
       const projectTask = state.projectTasks.find((t) => t._id === taskId);
       if (projectTask) {
         projectTask.progress = progress;
-        projectTask.status = status;
+        if (status) projectTask.status = status;
       }
     },
     addWorkLogToState: (state, action) => {
@@ -96,13 +96,16 @@ const taskSlice = createSlice({
       state.projectTasks = action.payload;
       state.loading = false;
     }).addCase(createTask.fulfilled, (state, action) => {
-      state.tasks.unshift(action.payload);
+      const task = action.payload.task || action.payload;
+      state.tasks.unshift(task);
+      state.projectTasks.unshift(task);
     }).addCase(updateTask.fulfilled, (state, action) => {
-      if (!action.payload || !action.payload._id) return;
-      const index = state.tasks.findIndex((t) => t && t._id === action.payload._id);
-      if (index !== -1) state.tasks[index] = action.payload;
-      const projectIndex = state.projectTasks.findIndex((t) => t && t._id === action.payload._id);
-      if (projectIndex !== -1) state.projectTasks[projectIndex] = action.payload;
+      const updatedTask = action.payload.task || action.payload;
+      if (!updatedTask || !updatedTask._id) return;
+      const index = state.tasks.findIndex((t) => t && t._id === updatedTask._id);
+      if (index !== -1) state.tasks[index] = updatedTask;
+      const projectIndex = state.projectTasks.findIndex((t) => t && t._id === updatedTask._id);
+      if (projectIndex !== -1) state.projectTasks[projectIndex] = updatedTask;
     }).addCase(deleteTask.fulfilled, (state, action) => {
       state.tasks = state.tasks.filter((t) => t._id !== action.payload);
       state.projectTasks = state.projectTasks.filter((t) => t._id !== action.payload);

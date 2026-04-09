@@ -1,5 +1,7 @@
 const Task = require('../models/Task.model');
 const Project = require('../models/Project.model');
+const User = require('../models/User.model');
+const emailService = require('../services/email.service');
 
 exports.createTask = async (req, res, next) => {
   try {
@@ -9,7 +11,19 @@ exports.createTask = async (req, res, next) => {
       io.to(task.project.toString()).emit('taskUpdate', { type: 'created', task });
       io.emit('globalUpdate', { type: 'taskCreated', taskId: task._id });
     }
-    res.json({ task });
+
+    // Send email if assigned
+    let mailStatus = null;
+    if (task.assignee) {
+      const assignee = await User.findById(task.assignee);
+      const manager = await User.findById(req.user._id);
+      if (assignee && manager) {
+        const path = task.project ? `/projects/${task.project}` : '';
+        mailStatus = await emailService.sendTaskAssignmentEmail(task, assignee, manager, path);
+      }
+    }
+
+    res.json({ task, mailStatus });
   } catch (err) {
     next(err);
   }
@@ -55,11 +69,13 @@ exports.getTask = async (req, res, next) => {
 
 exports.updateTask = async (req, res, next) => {
   try {
-    const task = await Task.findById(req.params.id).populate('project');
-    if (!task) return res.status(404).json({ error: 'Task not found' });
+    const oldTask = await Task.findById(req.params.id);
+    if (!oldTask) return res.status(404).json({ error: 'Task not found' });
     
-    const isAssignee = task.assignee && task.assignee.toString() === req.user._id.toString();
-    const isProjectMember = task.project && task.project.members.some(m => m.toString() === req.user._id.toString());
+    // Check auth
+    const taskPopulated = await Task.findById(req.params.id).populate('project');
+    const isAssignee = taskPopulated.assignee && taskPopulated.assignee.toString() === req.user._id.toString();
+    const isProjectMember = taskPopulated.project && taskPopulated.project.members.some(m => m.toString() === req.user._id.toString());
     const isManager = req.user.role === 'manager' || req.user.role === 'admin';
     
     if (!isAssignee && !isProjectMember && !isManager) {
@@ -68,6 +84,17 @@ exports.updateTask = async (req, res, next) => {
     
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('project assignee');
     
+    // Send email if assignee changed
+    let mailStatus = null;
+    if (req.body.assignee && (!oldTask.assignee || oldTask.assignee.toString() !== req.body.assignee.toString())) {
+      const assignee = await User.findById(req.body.assignee);
+      const manager = await User.findById(req.user._id);
+      if (assignee && manager) {
+        const path = updatedTask.project ? `/projects/${updatedTask.project._id}` : '';
+        mailStatus = await emailService.sendTaskAssignmentEmail(updatedTask, assignee, manager, path);
+      }
+    }
+
     const io_instance = req.app.get('io');
     if (io_instance) {
       if (updatedTask.project) {
@@ -76,7 +103,7 @@ exports.updateTask = async (req, res, next) => {
       }
       io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
     }
-    res.json({ task: updatedTask });
+    res.json({ task: updatedTask, mailStatus });
   } catch (err) {
     next(err);
   }
@@ -93,8 +120,20 @@ exports.listByProject = async (req, res, next) => {
 
 exports.assignee = async (req, res, next) => {
   try {
-    const task = await Task.findByIdAndUpdate(req.params.id, { assignee: req.body.userId }, { new: true });
-    res.json({ task });
+    const oldTask = await Task.findById(req.params.id);
+    const task = await Task.findByIdAndUpdate(req.params.id, { assignee: req.body.userId }, { new: true }).populate('project');
+    
+    let mailStatus = null;
+    if (req.body.userId && (!oldTask.assignee || oldTask.assignee.toString() !== req.body.userId.toString())) {
+      const assignee = await User.findById(req.body.userId);
+      const manager = await User.findById(req.user._id);
+      if (assignee && manager) {
+        const path = task.project ? `/projects/${task.project._id}` : '';
+        mailStatus = await emailService.sendTaskAssignmentEmail(task, assignee, manager, path);
+      }
+    }
+
+    res.json({ task, mailStatus });
   } catch (err) {
     next(err);
   }

@@ -66,11 +66,22 @@ const ProjectDetails = () => {
     }));
   };
 
-  const handleAssigneeChange = (taskId, userId) => {
-    dispatch(updateTask({
-      taskId,
-      taskData: { assignee: userId }
-    }));
+  const handleAssigneeChange = async (taskId, userId) => {
+    try {
+      const result = await dispatch(updateTask({
+        taskId,
+        taskData: { assignee: userId }
+      }));
+      
+      if (updateTask.fulfilled.match(result)) {
+        if (result.payload.mailStatus && result.payload.mailStatus.success) {
+          setSuccessMsg("Task assigned and email notification sent successfully!");
+          setTimeout(() => setSuccessMsg(""), 5000);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update assignee");
+    }
   };
 
   const TaskProgressManager = ({ task, canModify, isManager, user }) => {

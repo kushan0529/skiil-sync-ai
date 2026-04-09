@@ -160,6 +160,17 @@ Return ONLY a JSON array of top 3: [ { "projectIdIndex": <index>, "score": <0-1>
 
 async function chat(message, user) {
   try {
+    const isTaskRequest = message.toLowerCase().includes('task') || message.toLowerCase().includes('breakdown') || message.toLowerCase().includes('suggest');
+    
+    let systemPrompt = JIRA_SYSTEM_PROMPT;
+    if (isTaskRequest) {
+ systemPrompt += `
+If the user is asking for task breakdowns or suggestions, return your response as a JSON object with a "tasks" array.
+Each task should have: "title", "description", "priority" (low/medium/high), and "estimatedHours".
+Do not include any other text if returning JSON.
+Example: { "tasks": [ { "title": "Setup DB", "description": "...", "priority": "high", "estimatedHours": 4 } ] }`;
+    }
+
     const prompt = `User Context:
 Name: ${user.name}
 Role: ${user.role}
@@ -167,22 +178,16 @@ Skills: ${(user.skills || []).join(', ')}
 
 User Request: "${message}"
 
-Respond as a Jira-like Virtual Assistant. If the user asks for:
-- Task Breakdown: Suggest 3-5 sub-tasks for a given goal.
-- Descriptions: Help draft professional issue descriptions.
-- Summarization: Summarize progress (based on what they ask).
-- General PM: Provide advice on sprints, backlogs, or blockers.
-
-Keep responses professional, helpful, and formatted for readability. Use bullet points where appropriate., dont make the response too much lengthy , make it clear and smaller in length`;
+Respond as a Jira-like Virtual Assistant. If providing tasks, use the requested JSON format. Otherwise, be professional and concise.`;
     
     const resp = await client.chat.completions.create({
       model: RECOMMENDATION_MODEL,
       messages: [
-        { role: 'system', content: JIRA_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,
-      max_tokens: 500
+      max_tokens: 800
     });
 
     return resp.choices[0].message.content || "I'm sorry, I couldn't process that request at this time.";

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User.model');
 const jwt = require('jsonwebtoken');
+const dns = require('dns').promises;
 
 function signToken(payload, expiresIn = '7d') {
   const secret = process.env.JWT_SECRET || 'fallback_secret';
@@ -12,6 +13,24 @@ exports.register = async (req, res, next) => {
   try {
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Enter all required fields (name, email, password)' });
+    }
+
+    // 1. Basic format check (Regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // 2. Official existence check (DNS MX records)
+    const domain = email.split('@')[1];
+    try {
+      const mxRecords = await dns.resolveMx(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        return res.status(400).json({ error: 'This email domain does not exist or cannot receive emails.' });
+      }
+    } catch (dnsErr) {
+      console.error(`[auth] DNS Check failed for ${domain}:`, dnsErr.message);
+      return res.status(400).json({ error: 'Email domain verification failed. Please use a valid, existing email.' });
     }
     
     const exist = await User.findOne({ email });
