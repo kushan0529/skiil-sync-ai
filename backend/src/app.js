@@ -25,7 +25,10 @@ if (!process.env.MONGO_URL) {
 app.use(cors());
 app.use(express.json({ limit: '8mb' }));
 
-// 1. API Routes (MUST come before static files)
+// Routes
+app.get('/', (req, res) => {
+  res.json({ message: 'Skill Sync AI Backend is running!' });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
@@ -37,15 +40,6 @@ app.get('/api/health', (req, res) => res.json({
   ts: Date.now(), 
   db: require('mongoose').connection.readyState 
 }));
-
-// 2. Serve static files from the React frontend app
-// This assumes your frontend build folder is in 'frontend/dist'
-app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-
-// 3. Catch-all route: Send back React's index.html for any non-API request
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../frontend/dist', 'index.html'));
-});
 
 app.use(errorMiddleware);
 
