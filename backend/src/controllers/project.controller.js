@@ -41,20 +41,20 @@ exports.assignToBestProject = async (req, res, next) => {
       );
     }
 
-    // --- CRITICAL: RESPOND NOW TO ACHIEVE < 1s RESPONSE TIME ---
-    res.json({ project: assignedProject, reason, mailStatus: 'Queued' });
-
-    // 4. Trigger email in background AFTER response (No await here)
-    // On Vercel this is risky but the only way to meet "1s" goal with SMTP.
-    (async () => {
+    // Send email notification (AWAIT is necessary for reliability on Vercel)
+    let mailStatus = null;
+    if (assignedProject) {
+      console.log(`[project.controller] Sending email to ${user.email} for project ${assignedProject.name}`);
       try {
         const manager = await User.findById(req.user._id);
         const path = `/projects/${assignedProject._id}`;
-        await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
+        mailStatus = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
       } catch (err) {
-        console.error('[background-email] Failed:', err.message);
+        console.error('[project.controller] Email error:', err.message);
       }
-    })();
+    }
+
+    res.json({ project: assignedProject, reason, mailStatus });
 
   } catch (err) { next(err); }
 };

@@ -33,7 +33,10 @@ const AuthPage = () => {
     try {
       const res = await axios.post("/api/auth/login", { email, password });
       login(res.data.token, res.data.user);
-      navigate("/");
+      
+      // Redirect to the originally intended destination, or home
+      const from = location.state?.from?.pathname || "/";
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || "Invalid email or password. Please try again.");
     } finally {
