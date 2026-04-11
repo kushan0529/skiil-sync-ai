@@ -2,7 +2,7 @@ const Project = require('../models/Project.model');
 const Task = require('../models/Task.model');
 const User = require('../models/User.model');
 const aiService = require('../services/ai.service');
-const { seedDemoProjects } = require('../utils/seedProjects');
+const { seedOneProject } = require('../utils/seedProjects');
 const emailService = require('../services/email.service');
 
 exports.assignToBestProject = async (req, res, next) => {
@@ -179,8 +179,8 @@ exports.deleteProject = async (req, res, next) => {
 
 exports.seed = async (req, res, next) => {
   try {
-    const created = await seedDemoProjects(req.user._id);
-    res.json({ message: `${created.length} demo projects seeded successfully.`, projects: created });
+    const created = await seedOneProject(req.user._id);
+    res.json({ message: 'Demo project seeded successfully.', project: created });
   } catch (err) { next(err); }
 };
 

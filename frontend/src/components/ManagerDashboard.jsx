@@ -121,7 +121,7 @@ const ManagerDashboard = ({ onSuccess }) => {
     onClick={handleSeedProjects}
     className="btn btn-outline"
     style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, background: "var(--bg)" }}
-  ><Sparkles size={20} className="text-primary" /> Seed Demo Projects
+  ><Sparkles size={20} className="text-primary" /> Add Demo Project
           </button><button
     onClick={() => setIsProjectModalOpen(true)}
     className="btn btn-primary"

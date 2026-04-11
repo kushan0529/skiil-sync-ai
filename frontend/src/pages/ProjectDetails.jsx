@@ -149,12 +149,26 @@ const ProjectDetails = () => {
       dispatch(fetchTasksByProjectId(id));
       socket.emit("joinProject", id);
       
-      socket.on("taskUpdate", () => {
-        dispatch(fetchTasksByProjectId(id));
+      socket.on("taskUpdate", (data) => {
+        // Optimization: If the socket sends the updated task, update state directly to avoid flicker
+        if (data && data.task) {
+          dispatch(updateTaskProgressInState({ 
+            taskId: data.task._id, 
+            progress: data.task.progress, 
+            status: data.task.status 
+          }));
+        }
+        // Small delay before full refetch to allow DB consistency in production
+        setTimeout(() => {
+          dispatch(fetchTasksByProjectId(id));
+        }, 500);
       });
       
-      socket.on("projectUpdate", () => {
-        dispatch(fetchProjectById(id));
+      socket.on("projectUpdate", (data) => {
+        // Recalculate event triggered by backend
+        setTimeout(() => {
+          dispatch(fetchProjectById(id));
+        }, 800);
       });
     }
 
