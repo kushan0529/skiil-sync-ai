@@ -128,7 +128,6 @@ exports.getProject = async (req, res, next) => {
 
 exports.updateProject = async (req, res, next) => {
   try {
-    console.log(`[project.controller] updateProject called for ${req.params.id}`);
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     
@@ -144,11 +143,8 @@ exports.updateProject = async (req, res, next) => {
     const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('owner members', '-password');
     
     // Check for new members
-    const mailResults = [];
     const currentMembers = updatedProject.members.map(m => (m._id || m).toString());
     const newMembers = currentMembers.filter(mId => !oldMembers.includes(mId));
-
-    console.log(`[project.controller] Member update check: oldCount=${oldMembers.length}, newCount=${currentMembers.length}, addedCount=${newMembers.length}`);
 
     // Process emails in background
     if (newMembers.length > 0) {
@@ -169,7 +165,6 @@ exports.updateProject = async (req, res, next) => {
       mailStatus: { success: true } 
     });
   } catch (err) { 
-    console.error(`[project.controller] Error in updateProject:`, err);
     next(err); 
   }
 };

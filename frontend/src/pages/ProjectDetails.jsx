@@ -86,16 +86,12 @@ const ProjectDetails = () => {
 
   const TaskProgressManager = ({ task, canModify, isManager, user }) => {
     const handleIncrement = () => {
-      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
-      console.log(`Current progress: ${task.progress}% -> Target: ${Math.min((task.progress || 0) + 10, 100)}%`);
       if (!canModify) return;
       const nextProgress = Math.min((task.progress || 0) + 10, 100);
       handleTaskProgressChange(task._id, nextProgress);
     };
 
     const handleDecrement = () => {
-      console.log(`Debug: Clicking progress tab for task "${task.title}" (ID: ${task._id})`);
-      console.log(`Current progress: ${task.progress}% -> Target: ${Math.max((task.progress || 0) - 10, 0)}%`);
       if (!canModify) return;
       const nextProgress = Math.max((task.progress || 0) - 10, 0);
       handleTaskProgressChange(task._id, nextProgress);

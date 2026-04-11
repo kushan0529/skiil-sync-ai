@@ -148,7 +148,6 @@ const KanbanBoard = () => {
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log(`Debug: Decreasing progress for task "${task.title}"`);
                                       handleProgressUpdate(task._id, Math.max((task.progress || 0) - 10, 0));
                                     }}
                                     style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: "6px", padding: "0.25rem", cursor: "pointer", color: "var(--text-main)" }}
@@ -158,7 +157,6 @@ const KanbanBoard = () => {
                                   <button 
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log(`Debug: Increasing progress for task "${task.title}"`);
                                       handleProgressUpdate(task._id, Math.min((task.progress || 0) + 10, 100));
                                     }}
                                     style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(99, 102, 241, 0.1)", border: "1px solid var(--primary)", borderRadius: "6px", padding: "0.25rem", cursor: "pointer", color: "var(--primary)" }}

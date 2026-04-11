@@ -29,7 +29,7 @@ exports.createTask = async (req, res, next) => {
       }).catch(err => console.error(`[task.controller] Error fetching users for background email:`, err));
     }
 
-    res.json({ task, mailStatus: 'Email triggered in background' });
+    res.json({ task, mailStatus: { success: true, message: 'Email triggered in background' } });
   } catch (err) {
     next(err);
   }
@@ -75,13 +75,12 @@ exports.getTask = async (req, res, next) => {
 
 exports.updateTask = async (req, res, next) => {
   try {
-    const oldTask = await Task.findById(req.params.id);
+    const oldTask = await Task.findById(req.params.id).populate('project');
     if (!oldTask) return res.status(404).json({ error: 'Task not found' });
     
     // Check auth
-    const taskPopulated = await Task.findById(req.params.id).populate('project');
-    const isAssignee = taskPopulated.assignee && taskPopulated.assignee.toString() === req.user._id.toString();
-    const isProjectMember = taskPopulated.project && taskPopulated.project.members.some(m => m.toString() === req.user._id.toString());
+    const isAssignee = oldTask.assignee && oldTask.assignee.toString() === req.user._id.toString();
+    const isProjectMember = oldTask.project && oldTask.project.members && oldTask.project.members.some(m => m.toString() === req.user._id.toString());
     const isManager = req.user.role === 'manager' || req.user.role === 'admin';
     
     if (!isAssignee && !isProjectMember && !isManager) {
@@ -107,15 +106,15 @@ exports.updateTask = async (req, res, next) => {
       }).catch(err => console.error(`[task.controller] Error fetching users for background email update:`, err));
     }
 
-    const io_instance = req.app.get('io');
-    if (io_instance) {
+    const io = req.app.get('io');
+    if (io) {
       if (updatedTask.project) {
-        io_instance.to(updatedTask.project._id.toString()).emit('taskUpdate', { type: 'updated', task: updatedTask });
-        io_instance.to(updatedTask.project._id.toString()).emit('projectUpdate', { type: 'recalculate', projectId: updatedTask.project._id });
+        io.to(updatedTask.project._id.toString()).emit('taskUpdate', { type: 'updated', task: updatedTask });
+        io.to(updatedTask.project._id.toString()).emit('projectUpdate', { type: 'recalculate', projectId: updatedTask.project._id });
       }
-      io_instance.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
+      io.emit('globalUpdate', { type: 'taskUpdated', taskId: updatedTask._id });
     }
-    res.json({ task: updatedTask, mailStatus: 'Email triggered in background' });
+    res.json({ task: updatedTask, mailStatus: { success: true, message: 'Email triggered in background' } });
   } catch (err) {
     next(err);
   }
@@ -152,7 +151,7 @@ exports.assignee = async (req, res, next) => {
       });
     }
 
-    res.json({ task, mailStatus: 'Email triggered in background' });
+    res.json({ task, mailStatus: { success: true, message: 'Email triggered in background' } });
   } catch (err) {
     next(err);
   }
