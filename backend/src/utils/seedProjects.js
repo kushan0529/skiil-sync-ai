@@ -109,47 +109,39 @@ async function seedOneProject(ownerId) {
   const thirtyDaysOut = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const threeDaysOut = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
-  // Find a project that doesn't exist yet for this user
-  // We'll check by name AND owner
-  for (const demo of demoProjects) {
-    const projectExists = await Project.findOne({ name: demo.name, owner: ownerId });
-    
-    if (!projectExists) {
-      const project = await Project.create({ 
-        name: demo.name, 
-        description: demo.description, 
-        requiredSkills: demo.requiredSkills, 
-        status: demo.status, 
-        owner: ownerId,
-        deadline: thirtyDaysOut
-      });
+  // Get current projects to see what's missing
+  const existingProjects = await Project.find({ owner: ownerId }, 'name');
+  const existingNames = existingProjects.map(p => p.name);
 
-      // Seed tasks
-      for (const t of demo.tasks) {
-        await Task.create({
-          ...t,
-          project: project._id,
-          deadline: threeDaysOut
-        });
-      }
+  const missingProjects = demoProjects.filter(d => !existingNames.includes(d.name));
 
-      return project;
-    }
+  let selectedDemo;
+  let isCopy = false;
+
+  if (missingProjects.length > 0) {
+    // Pick a random missing project
+    selectedDemo = missingProjects[Math.floor(Math.random() * missingProjects.length)];
+  } else {
+    // All are present, pick any random one and add a unique suffix
+    selectedDemo = demoProjects[Math.floor(Math.random() * demoProjects.length)];
+    isCopy = true;
   }
 
-  // If all projects already exist, add a copy of the first one with a random suffix
-  const firstDemo = demoProjects[0];
-  const suffix = Math.floor(Math.random() * 1000);
+  const projectName = isCopy 
+    ? `${selectedDemo.name} (Instance ${Math.floor(Math.random() * 999)})` 
+    : selectedDemo.name;
+
   const project = await Project.create({ 
-    name: `${firstDemo.name} #${suffix}`, 
-    description: firstDemo.description, 
-    requiredSkills: firstDemo.requiredSkills, 
-    status: firstDemo.status, 
+    name: projectName, 
+    description: selectedDemo.description, 
+    requiredSkills: selectedDemo.requiredSkills, 
+    status: selectedDemo.status, 
     owner: ownerId,
     deadline: thirtyDaysOut
   });
 
-  for (const t of firstDemo.tasks) {
+  // Seed tasks
+  for (const t of selectedDemo.tasks) {
     await Task.create({
       ...t,
       project: project._id,

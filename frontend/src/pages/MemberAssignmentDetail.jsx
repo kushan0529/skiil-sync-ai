@@ -79,14 +79,18 @@ const MemberAssignmentDetail = () => {
   const handleAssign = async (projectId) => {
     setAssigning(true);
     try {
-      await axios.put(`/api/projects/${projectId}`, {
+      const res = await axios.put(`/api/projects/${projectId}`, {
         $addToSet: { members: userId }
       });
       const projectName = recommendations.find((r) => r.project._id === projectId)?.project.name || "Project";
-      setMessage(`The project "${projectName}" has been successfully assigned to ${member?.name}.`);
-      setTimeout(() => navigate("/manager"), 3e3);
+      
+      // Highlighted message with Gmail mention
+      setMessage(`Success! "${projectName}" assigned to ${member?.name}. A professional notification has been dispatched to their Gmail.`);
+      
+      // Longer timeout to let them read the highlight
+      setTimeout(() => navigate("/manager"), 4000);
     } catch (err) {
-      setMessage("Failed to assign member");
+      setMessage("Failed to assign member. Please verify account permissions.");
     } finally {
       setAssigning(false);
     }

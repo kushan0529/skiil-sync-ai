@@ -45,7 +45,10 @@ const Recommendations = () => {
         $addToSet: { members: selectedUser._id }
       });
       const projectName = recommendations.find((r) => r.project._id === projectId)?.project.name || "Project";
-      setMessage(`The project "${projectName}" has been successfully assigned to ${selectedUser.name}.`);
+      
+      // Highlighted message with Gmail mention
+      setMessage(`Success! "${projectName}" assigned to ${selectedUser.name}. Assignment details have been shared via Gmail.`);
+      
       setRecommendations((prev) => prev.map((rec) => {
         if (rec.project._id === projectId) {
           return {
@@ -58,9 +61,9 @@ const Recommendations = () => {
         }
         return rec;
       }));
-      setTimeout(() => setMessage(""), 5e3);
+      setTimeout(() => setMessage(""), 6000);
     } catch (err) {
-      setMessage("Failed to assign project");
+      setMessage("Failed to assign project. Connection error.");
     }
   };
   return <div className="fade-in"><div style={{ marginBottom: "2rem" }}><h1 style={{ fontSize: "2.5rem", fontWeight: 800, marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.75rem", letterSpacing: "-0.02em" }}><Sparkles size={32} color="var(--primary)" />

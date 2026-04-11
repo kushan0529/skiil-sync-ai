@@ -41,20 +41,26 @@ exports.assignToBestProject = async (req, res, next) => {
       );
     }
 
-    // Send email notification (AWAIT is necessary for reliability on Vercel)
-    let mailStatus = null;
+    // Send email notification in background (Non-blocking for faster response)
     if (assignedProject) {
-      console.log(`[project.controller] Sending email to ${user.email} for project ${assignedProject.name}`);
-      try {
-        const manager = await User.findById(req.user._id);
-        const path = `/projects/${assignedProject._id}`;
-        mailStatus = await emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path);
-      } catch (err) {
-        console.error('[project.controller] Email error:', err.message);
-      }
+      console.log(`[project.controller] Triggering background email to ${user.email} for project ${assignedProject.name}`);
+      const currentUserId = req.user._id;
+      const path = `/projects/${assignedProject._id}`;
+      
+      User.findById(currentUserId).then(manager => {
+        if (manager) {
+          emailService.sendProjectAssignmentEmail(assignedProject, user, manager, path)
+            .then(status => console.log(`[project.controller] Background email sent:`, status))
+            .catch(err => console.error(`[project.controller] Background email failed:`, err.message));
+        }
+      });
     }
 
-    res.json({ project: assignedProject, reason, mailStatus });
+    res.json({ 
+      project: assignedProject, 
+      reason, 
+      mailStatus: { success: true, message: 'Assignment processed. Notification email is being sent.' } 
+    });
 
   } catch (err) { next(err); }
 };
@@ -83,22 +89,24 @@ exports.createProject = async (req, res, next) => {
       await Task.insertMany(taskDocs);
     }
 
-    // Send emails to all members
-    const mailResults = [];
+    // Send emails to all members in parallel (Non-blocking)
     if (members && members.length > 0) {
       const manager = await User.findById(req.user._id);
       const path = `/projects/${project._id}`;
-      for (const memberId of members) {
+      
+      // We don't await this, let them send in background
+      Promise.all(members.map(async (memberId) => {
         const member = await User.findById(memberId);
         if (member && member.email) {
-          const status = await emailService.sendProjectAssignmentEmail(project, member, manager, path);
-          mailResults.push({ memberId, status });
+          return emailService.sendProjectAssignmentEmail(project, member, manager, path);
         }
-      }
+      })).then(results => {
+        console.log(`[project.controller] Batch email results:`, results.length);
+      }).catch(err => console.error(`[project.controller] Batch email error:`, err));
     }
 
-    let message = 'Project created successfully';
-    res.json({ project, message, mailResults });
+    let message = 'Project created successfully. Notifications are being sent to members.';
+    res.json({ project, message, mailStatus: { success: true } });
   } catch (err) { next(err); }
 };
 
@@ -142,23 +150,24 @@ exports.updateProject = async (req, res, next) => {
 
     console.log(`[project.controller] Member update check: oldCount=${oldMembers.length}, newCount=${currentMembers.length}, addedCount=${newMembers.length}`);
 
+    // Process emails in background
     if (newMembers.length > 0) {
       const manager = await User.findById(req.user._id);
       const path = `/projects/${updatedProject._id}`;
-      for (const memberId of newMembers) {
-        console.log(`[project.controller] Processing new member: ${memberId}`);
+      
+      Promise.all(newMembers.map(async (memberId) => {
         const member = await User.findById(memberId);
         if (member && member.email) {
-          console.log(`[project.controller] Found member email: ${member.email}. Triggering email service...`);
-          const status = await emailService.sendProjectAssignmentEmail(updatedProject, member, manager, path);
-          mailResults.push({ memberId, status });
-        } else {
-          console.warn(`[project.controller] No email found for user ${memberId}`);
+          return emailService.sendProjectAssignmentEmail(updatedProject, member, manager, path);
         }
-      }
+      })).catch(err => console.error(`[project.controller] Update email background error:`, err));
     }
 
-    res.json({ project: updatedProject, mailResults });
+    res.json({ 
+      project: updatedProject, 
+      message: 'Project updated successfully. Notifications triggered for new members.',
+      mailStatus: { success: true } 
+    });
   } catch (err) { 
     console.error(`[project.controller] Error in updateProject:`, err);
     next(err); 

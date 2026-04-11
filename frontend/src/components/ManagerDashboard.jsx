@@ -27,6 +27,7 @@ const ManagerDashboard = ({ onSuccess }) => {
   const [parsingUserId, setParsingUserId] = useState(null);
   const [showSkills, setShowSkills] = useState(false);
   const [extractedSkills, setExtractedSkills] = useState([]);
+  const [isSeeding, setIsSeeding] = useState(false);
   useEffect(() => {
     dispatch(fetchAllTasks());
     dispatch(fetchUsers());
@@ -71,6 +72,8 @@ const ManagerDashboard = ({ onSuccess }) => {
     }
   };
   const handleSeedProjects = async () => {
+    if (isSeeding) return;
+    setIsSeeding(true);
     try {
       const res = await axios.post("/api/projects/seed");
       if (onSuccess) onSuccess(res.data.message);
@@ -78,6 +81,8 @@ const ManagerDashboard = ({ onSuccess }) => {
       dispatch(fetchAllTasks());
     } catch (err) {
       console.error("Failed to seed projects");
+    } finally {
+      setIsSeeding(false);
     }
   };
   const handleResumeUpload = async (e, userId) => {
@@ -120,8 +125,9 @@ const ManagerDashboard = ({ onSuccess }) => {
   }}><Zap size={28} /></div><div><h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 800, letterSpacing: "-0.02em" }}>Quick Management Actions</h2><p style={{ margin: "0.25rem 0 0 0", fontSize: "1rem", color: "var(--text-muted)" }}>Allocate resources and initialize new workstreams</p></div></div><div style={{ display: "flex", gap: "1rem" }}><button
     onClick={handleSeedProjects}
     className="btn btn-outline"
-    style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, background: "var(--bg)" }}
-  ><Sparkles size={20} className="text-primary" /> Add Demo Project
+    disabled={isSeeding}
+    style={{ padding: "0.75rem 1.5rem", display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 600, background: "var(--bg)", cursor: isSeeding ? "not-allowed" : "pointer" }}
+  ><Sparkles size={20} className={isSeeding ? "animate-spin" : "text-primary"} /> {isSeeding ? "Seeding..." : "Add Demo Project"}
           </button><button
     onClick={() => setIsProjectModalOpen(true)}
     className="btn btn-primary"
