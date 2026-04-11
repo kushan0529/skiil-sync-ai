@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
 });
 
 exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => {
-  console.log(`[email] Attempting SMTP send for task: ${task.title}`);
+  console.log(`[email] Attempting SMTP send for task: ${task.title} to recipient: ${assignee.email}`);
   
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     return { success: false, error: 'SMTP Credentials missing' };
@@ -62,7 +62,7 @@ exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => 
 };
 
 exports.sendProjectAssignmentEmail = async (project, assignee, manager, path = '') => {
-  console.log(`[email] Attempting SMTP send for project: ${project.name}`);
+  console.log(`[email] Attempting SMTP send for project: ${project.name} to recipient: ${assignee.email}`);
 
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     return { success: false, error: 'SMTP Credentials missing' };
