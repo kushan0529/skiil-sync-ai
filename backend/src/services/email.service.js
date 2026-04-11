@@ -9,17 +9,17 @@ const nodemailer = require('nodemailer');
  */
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  pool: true, // Keeps connection open to speed up multiple sends
-  maxConnections: 5,
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT) || 465,
+  secure: (process.env.EMAIL_PORT == 465), // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: false // Helps with datacenter handshake errors
+    rejectUnauthorized: false
   },
-
+  connectionTimeout: 10000, // 10s timeout
 });
 
 exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => {
