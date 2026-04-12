@@ -174,8 +174,8 @@ exports.deleteProject = async (req, res, next) => {
     const project = await Project.findByIdAndDelete(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
     
-    // Delete all tasks associated with this project
-    await Task.deleteMany({ project: req.params.id });
+    // Delete all tasks associated with this project (Background)
+    Task.deleteMany({ project: req.params.id }).catch(err => console.error('[project.controller] Task deletion error:', err));
     
     res.json({ ok: true });
   } catch (err) { next(err); }

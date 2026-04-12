@@ -30,6 +30,7 @@ exports.createTask = async (req, res, next) => {
     }
 
     res.json({ task, mailStatus: { success: true, message: 'Email triggered in background' } });
+    console.log('mail sent successfuly')
   } catch (err) {
     next(err);
   }
@@ -46,7 +47,7 @@ exports.listTasks = async (req, res, next) => {
         { members: req.user._id },
         { owner: req.user._id }
       ]
-    });
+    }).select('_id');
     const projectIds = projects.map(p => p._id);
     
     query = {
@@ -94,6 +95,7 @@ exports.updateTask = async (req, res, next) => {
       const currentUserId = req.user._id;
       const path = updatedTask.project ? `/projects/${updatedTask.project._id}` : '';
       
+      // Fetch users in background to avoid blocking the response
       Promise.all([
         User.findById(req.body.assignee),
         User.findById(currentUserId)
@@ -103,7 +105,7 @@ exports.updateTask = async (req, res, next) => {
             .then(status => console.log(`[task.controller] Background update email status:`, status))
             .catch(err => console.error(`[task.controller] Background update email error:`, err));
         }
-      }).catch(err => console.error(`[task.controller] Error fetching users for background email update:`, err));
+      }).catch(err => console.error(`[task.controller] Background email lookup error:`, err));
     }
 
     const io = req.app.get('io');

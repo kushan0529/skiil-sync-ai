@@ -127,15 +127,15 @@ async function seedOneProject(ownerId) {
     isCopy = true;
   }
 
-  const projectName = isCopy 
-    ? `${selectedDemo.name} (Instance ${Math.floor(Math.random() * 999)})` 
+  const projectName = isCopy
+    ? `${selectedDemo.name} (Instance ${Math.floor(Math.random() * 999)})`
     : selectedDemo.name;
 
-  const project = await Project.create({ 
-    name: projectName, 
-    description: selectedDemo.description, 
-    requiredSkills: selectedDemo.requiredSkills, 
-    status: selectedDemo.status, 
+  const project = await Project.create({
+    name: projectName,
+    description: selectedDemo.description,
+    requiredSkills: selectedDemo.requiredSkills,
+    status: selectedDemo.status,
     owner: ownerId,
     deadline: thirtyDaysOut
   });

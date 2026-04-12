@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.EMAIL_PORT) || 465,
-  secure: (process.env.EMAIL_PORT == 465), // true for 465, false for other ports
+  secure: parseInt(process.env.EMAIL_PORT) === 465, // Explicitly true for 465, false for 587
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -19,7 +19,17 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  connectionTimeout: 10000, // 10s timeout
+  connectionTimeout: 15000, // 15s timeout for global stability
+  greetingTimeout: 15000,
+});
+
+// Verify connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[email] SMTP Verification Failed:', error.message);
+  } else {
+    console.log('[email] SMTP Server is ready to take our messages');
+  }
 });
 
 exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => {

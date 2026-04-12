@@ -31,7 +31,6 @@ const ProjectDetails = () => {
 
   const handleTaskSuccess = (msg) => {
     setSuccessMsg(msg);
-    if (id) dispatch(fetchTasksByProjectId(id));
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
@@ -180,10 +179,6 @@ const ProjectDetails = () => {
 
   const handleAssignSuccess = (msg) => {
     setSuccessMsg(msg);
-    if (id) {
-      dispatch(fetchProjectById(id));
-      dispatch(fetchTasksByProjectId(id));
-    }
     setTimeout(() => setSuccessMsg(""), 3000);
   };
 
