@@ -22,13 +22,13 @@ exports.listUsers = async (req, res, next) => {
 exports.uploadResume = async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'Resume file required' });
-    
+
     // If manager is uploading for a specific user
     const targetUserId = req.body.userId || req.user._id;
-    
+
     // Only allow self-upload or manager/admin upload
-    if (targetUserId.toString() !== req.user._id.toString() && 
-        req.user.role !== 'manager' && req.user.role !== 'admin') {
+    if (targetUserId.toString() !== req.user._id.toString() &&
+      req.user.role !== 'manager' && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

@@ -80,7 +80,8 @@ const MemberAssignmentDetail = () => {
     setAssigning(true);
     try {
       const res = await axios.put(`/api/projects/${projectId}`, {
-        $addToSet: { members: userId }
+        $addToSet: { members: userId },
+        forceNotify: true
       });
       const projectName = recommendations.find((r) => r.project._id === projectId)?.project.name || "Project";
       

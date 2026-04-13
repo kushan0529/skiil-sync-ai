@@ -147,16 +147,21 @@ exports.updateProject = async (req, res, next) => {
     const newMembers = currentMembers.filter(mId => !oldMembers.includes(mId));
 
     // Process emails in background
-    if (newMembers.length > 0) {
+    // Send to: newly added members OR if explicitly requested via forceNotify
+    const targetEmails = req.body.forceNotify ? currentMembers : newMembers;
+
+    if (targetEmails.length > 0) {
       const manager = await User.findById(req.user._id);
       const path = `/projects/${updatedProject._id}`;
       
-      Promise.all(newMembers.map(async (memberId) => {
+      Promise.all(targetEmails.map(async (memberId) => {
         const member = await User.findById(memberId);
         if (member && member.email) {
           return emailService.sendProjectAssignmentEmail(updatedProject, member, manager, path);
         }
-      })).catch(err => console.error(`[project.controller] Update email background error:`, err));
+      })).then(results => {
+        console.log(`[project.controller] Assignment notifications dispatched:`, results.length);
+      }).catch(err => console.error(`[project.controller] Update email background error:`, err));
     }
 
     res.json({ 

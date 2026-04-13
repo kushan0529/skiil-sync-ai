@@ -42,7 +42,8 @@ const Recommendations = () => {
     if (!selectedUser) return;
     try {
       await axios.put(`/api/projects/${projectId}`, {
-        $addToSet: { members: selectedUser._id }
+        $addToSet: { members: selectedUser._id },
+        forceNotify: true
       });
       const projectName = recommendations.find((r) => r.project._id === projectId)?.project.name || "Project";
       
