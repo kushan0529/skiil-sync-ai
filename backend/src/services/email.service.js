@@ -255,10 +255,19 @@ const sendEmail = async ({ to, subject, html }) => {
           'Content-Type': 'application/json'
         }
       });
-      console.log('[email] Brevo API Success:', response.data.messageId);
+      console.log(`[email] Brevo API Success: Sent to ${to}. ID: ${response.data.messageId}`);
       return { success: true, messageId: response.data.messageId, provider: 'brevo' };
     } catch (error) {
-      console.error('[email] Brevo API Error:', error.response ? error.response.data : error.message);
+      if (error.response) {
+        console.error('[email] Brevo API Error:', JSON.stringify(error.response.data));
+        // Common Brevo error: "sender_not_verified"
+        return { 
+          success: false, 
+          error: error.response.data.message || 'Brevo API Error',
+          code: error.response.data.code 
+        };
+      }
+      console.error('[email] Brevo API Network/Unknown Error:', error.message);
       return { success: false, error: error.message };
     }
   }
