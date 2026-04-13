@@ -144,12 +144,17 @@ const transporter = nodemailer.createTransport({
   host: SMTP_HOST,
   port: SMTP_PORT,
   secure: SMTP_SECURE,
+  family: 4, // Force IPv4 to solve ENETUNREACH IPv6 issues on cloud providers
   pool: true,
   maxConnections: 3,
   maxMessages: 50,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
   },
   connectionTimeout: 20000,
   greetingTimeout: 20000,
