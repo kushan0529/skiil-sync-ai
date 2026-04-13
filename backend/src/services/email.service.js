@@ -131,6 +131,14 @@
 
 
 const nodemailer = require('nodemailer');
+const axios = require('axios');
+
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const useBrevo = !!BREVO_API_KEY;
+
+if (useBrevo) {
+  console.log('[email] Using Brevo API (Bypassing Render SMTP block)');
+}
 
 const SMTP_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
 const SMTP_PORT = Number(process.env.EMAIL_PORT || 465);
@@ -234,6 +242,27 @@ const buildEmailLayout = ({ title, greetingName, intro, fields = [], buttonText,
 };
 
 const sendEmail = async ({ to, subject, html }) => {
+  if (useBrevo) {
+    try {
+      const response = await axios.post('https://api.brevo.com/v3/smtp/email', {
+        sender: { email: process.env.EMAIL_USER || 'noreply@skillsync.ai', name: 'SkillSync' },
+        to: [{ email: to }],
+        subject: subject,
+        htmlContent: html
+      }, {
+        headers: {
+          'api-key': BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('[email] Brevo API Success:', response.data.messageId);
+      return { success: true, messageId: response.data.messageId, provider: 'brevo' };
+    } catch (error) {
+      console.error('[email] Brevo API Error:', error.response ? error.response.data : error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     return { success: false, error: 'SMTP credentials missing' };
   }
