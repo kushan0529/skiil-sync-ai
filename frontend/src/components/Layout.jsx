@@ -10,7 +10,4 @@ const Layout = ({ children }) => {
   }
   return <div className="app-layout"><Sidebar /><main className="main-content"><div className="fade-in">{children}</div></main></div>;
 };
-var stdin_default = Layout;
-export {
-  stdin_default as default
-};
+export default Layout;

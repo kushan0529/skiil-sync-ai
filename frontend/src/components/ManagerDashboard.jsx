@@ -193,7 +193,7 @@ const ManagerDashboard = ({ onSuccess }) => {
     fontWeight: 800,
     boxShadow: "0 4px 12px rgba(99, 102, 241, 0.25)",
     flexShrink: 0
-  }}>{dev.name.charAt(0)}</div><div style={{ flex: 1, minWidth: "0" }}><div style={{ 
+  }}>{dev.name?.charAt(0) || "U"}</div><div style={{ flex: 1, minWidth: "0" }}><div style={{ 
     fontSize: "1.15rem", 
     fontWeight: 800, 
     color: "var(--text-main)", 
@@ -276,7 +276,4 @@ const ManagerDashboard = ({ onSuccess }) => {
     style={{ background: "var(--error)", borderColor: "var(--error)" }}
   >{userDeleteLoading ? "Deleting..." : "Confirm Delete"}</button></div></div></Modal></div>;
 };
-var stdin_default = ManagerDashboard;
-export {
-  stdin_default as default
-};
+export default ManagerDashboard;

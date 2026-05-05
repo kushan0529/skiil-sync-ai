@@ -138,7 +138,6 @@ exports.updateProject = async (req, res, next) => {
     if (!isMember && !isOwner && !isManager) {
       return res.status(403).json({ error: 'Not authorized to update this project' });
     }
-
     const oldMembers = project.members.map(m => m.toString());
     const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('owner members', '-password');
     
@@ -160,7 +159,7 @@ exports.updateProject = async (req, res, next) => {
           return emailService.sendProjectAssignmentEmail(updatedProject, member, manager, path);
         }
       })).then(results => {
-        console.log(`[project.controller] Assignment notifications dispatched:`, results.length);
+        console.log(`[project.controllsser] Assignment notifications dispatched:`, results.length);
       }).catch(err => console.error(`[project.controller] Update email background error:`, err));
     }
 

@@ -79,7 +79,7 @@ const AssignMemberModal = ({ isOpen, onClose, projectId, currentMembers, require
       fontSize: "1.25rem",
       fontWeight: 800,
       flexShrink: 0
-    }}>{user.name.charAt(0)}</div><div style={{ flex: 1 }}><div style={{ fontSize: "1.15rem", fontWeight: 800, marginBottom: "0.1rem" }}>{user.name}</div><div style={{ fontSize: "0.8rem", opacity: 0.85, fontWeight: 500 }}>{user.role}</div>{matchedSkills.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.4rem" }}>{matchedSkills.map((s) => <span key={s} style={{
+    }}>{user.name?.charAt(0) || "U"}</div><div style={{ flex: 1 }}><div style={{ fontSize: "1.15rem", fontWeight: 800, marginBottom: "0.1rem" }}>{user.name}</div><div style={{ fontSize: "0.8rem", opacity: 0.85, fontWeight: 500 }}>{user.role}</div>{matchedSkills.length > 0 && <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", marginTop: "0.4rem" }}>{matchedSkills.map((s) => <span key={s} style={{
       fontSize: "0.65rem",
       background: selectedMembers.includes(user._id) ? "rgba(255,255,255,0.2)" : "var(--success)",
       color: "white",

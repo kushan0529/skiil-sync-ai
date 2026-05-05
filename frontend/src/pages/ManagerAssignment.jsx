@@ -123,7 +123,7 @@ const ManagerAssignment = () => {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                   <div style={{ width: "40px", height: "40px", borderRadius: "50%", background: "rgba(245, 158, 11, 0.1)", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
-                    {m.name.charAt(0)}
+                    {m.name?.charAt(0) || "U"}
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: "1rem" }}>{m.name}</div>
