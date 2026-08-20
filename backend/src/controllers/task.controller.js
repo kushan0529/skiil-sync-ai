@@ -5,7 +5,23 @@ const emailService = require('../services/email.service');
 
 exports.createTask = async (req, res, next) => {
   try {
-    const task = await Task.create(req.body);
+    const taskPayload = { ...req.body };
+    if (taskPayload.priority && !taskPayload.preference) {
+      taskPayload.preference = String(taskPayload.priority).toLowerCase();
+      delete taskPayload.priority;
+    }
+    if (!taskPayload.linearId) {
+      const latestLinearTask = await Task.findOne({ linearId: /^SKL-\d+$/ })
+        .sort({ createdAt: -1 })
+        .select('linearId');
+      const latestNumber = latestLinearTask?.linearId ? Number(latestLinearTask.linearId.replace('SKL-', '')) : 0;
+      taskPayload.linearId = `SKL-${latestNumber + 1}`;
+    }
+    if (typeof taskPayload.labels === 'string') {
+      taskPayload.labels = taskPayload.labels.split(',').map(label => label.trim()).filter(Boolean);
+    }
+
+    const task = await Task.create(taskPayload);
     const io = req.app.get('io');
     if (io && task.project) {
       io.to(task.project.toString()).emit('taskUpdate', { type: 'created', task });
@@ -76,6 +92,15 @@ exports.getTask = async (req, res, next) => {
 
 exports.updateTask = async (req, res, next) => {
   try {
+    const updatePayload = { ...req.body };
+    if (updatePayload.priority && !updatePayload.preference) {
+      updatePayload.preference = String(updatePayload.priority).toLowerCase();
+      delete updatePayload.priority;
+    }
+    if (typeof updatePayload.labels === 'string') {
+      updatePayload.labels = updatePayload.labels.split(',').map(label => label.trim()).filter(Boolean);
+    }
+
     const oldTask = await Task.findById(req.params.id).populate('project');
     if (!oldTask) return res.status(404).json({ error: 'Task not found' });
     
@@ -88,16 +113,16 @@ exports.updateTask = async (req, res, next) => {
       return res.status(403).json({ error: 'Not authorized to update this task' });
     }
     
-    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('project assignee');
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, updatePayload, { new: true }).populate('project assignee');
     
     // Send email if assignee changed (Non-blocking)
-    if (req.body.assignee && (!oldTask.assignee || oldTask.assignee.toString() !== req.body.assignee.toString())) {
+    if (updatePayload.assignee && (!oldTask.assignee || oldTask.assignee.toString() !== updatePayload.assignee.toString())) {
       const currentUserId = req.user._id;
       const path = updatedTask.project ? `/projects/${updatedTask.project._id}` : '';
       
       // Fetch users in background to avoid blocking the response
       Promise.all([
-        User.findById(req.body.assignee),
+        User.findById(updatePayload.assignee),
         User.findById(currentUserId)
       ]).then(([assignee, manager]) => {
         if (assignee && manager) {

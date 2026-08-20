@@ -331,7 +331,8 @@ exports.sendTaskAssignmentEmail = async (task, assignee, manager, path = '') => 
     intro: `You have been assigned a new task in SkillSync.`,
     fields: [
       { label: 'Task', value: task?.title || 'N/A' },
-      { label: 'Priority', value: task?.priority || 'Medium' },
+      { label: 'Priority', value: task?.preference || task?.priority || 'Medium' },
+      { label: 'Issue', value: task?.linearId || 'N/A' },
       { label: 'Deadline', value: formatDate(task?.deadline) },
       { label: 'Assigned By', value: manager?.name || manager?.email || 'Manager' },
     ],

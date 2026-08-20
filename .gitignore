@@ -22,3 +22,5 @@ Thumbs.db
 
 # Backend specific
 backend/.env
+
+Ruf.jsx

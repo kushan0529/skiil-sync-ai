@@ -141,9 +141,18 @@ async function seedOneProject(ownerId) {
   });
 
   // Seed tasks
-  for (const t of selectedDemo.tasks) {
+  for (const [index, t] of selectedDemo.tasks.entries()) {
+    const taskCount = await Task.countDocuments();
     await Task.create({
-      ...t,
+      title: t.title,
+      description: t.description,
+      preference: String(t.priority || 'Medium').toLowerCase(),
+      progress: t.progress,
+      linearId: `SKL-${taskCount + 1}`,
+      issueType: index === 0 ? 'feature' : 'task',
+      cycle: 'Backlog',
+      estimate: index === 0 ? 5 : 3,
+      labels: selectedDemo.requiredSkills.slice(0, 2).map(skill => skill.toLowerCase()),
       project: project._id,
       deadline: threeDaysOut
     });

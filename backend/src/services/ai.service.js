@@ -166,9 +166,9 @@ async function chat(message, user) {
     if (isTaskRequest) {
  systemPrompt += `
 If the user is asking for task breakdowns or suggestions, return your response as a JSON object with a "tasks" array.
-Each task should have: "title", "description", "priority" (low/medium/high), and "estimatedHours".
+Each task should have: "title", "description", "preference" (low/medium/high), "issueType" (feature/bug/improvement/task), "estimate" (0/1/2/3/5/8/13), "labels" (array of short strings), and "estimatedHours".
 Do not include any other text if returning JSON.
-Example: { "tasks": [ { "title": "Setup DB", "description": "...", "priority": "high", "estimatedHours": 4 } ] }`;
+Example: { "tasks": [ { "title": "Setup DB", "description": "...", "preference": "high", "issueType": "task", "estimate": 3, "labels": ["backend"], "estimatedHours": 4 } ] }`;
     }
 
     const prompt = `User Context:
@@ -198,4 +198,3 @@ Respond as a Jira-like Virtual Assistant. If providing tasks, use the requested 
 }
 
 module.exports = { recommendAssignees, extractSkillsFromResume, recommendProjects, chat };
-
