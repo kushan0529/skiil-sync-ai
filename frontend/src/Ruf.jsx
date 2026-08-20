@@ -1,45 +1,6 @@
-import { createSlice,createAsyncThunk } from "@reduxjs/toolkit";
-import axios from 'axios';
-const token=localStorage
-
-const checkAuth=createAsyncThunk('auth/checkAuth',async(_,{reject}))
-
-const authSlice=createSlice({
-    name:auth,
-    initialState:{
-        user:null,
-        token:token,
-        isAuthenticated:!!token,
-        loading:true,
-        error:false
-    },
-    reducers:{
-        logintrue:(state,action)=>{
-            const{token,user}=action.payload;
-            state.user=user;
-            state.token=token;
-            state.loading=false;
-            localStorage.setItem('token',token);
-            axios.defaults.headers.common['Authorization']=`Bearer${token}`;
-        },
-        logout:(state)=>{
-            state.user=null;
-            state.token=null;
-            state.isAuthenticated=false;
-            localStorage.removeItem("token");
-            delete axios.defaults.headers.common['Authorization']
-        },
-        setLoading:(state,action)=>{
-            state.loading=action.payload;
-
-        }
-    },
-    extraReducers:(builder)=>{
-        builder.addCase(checkAuth.pending,(state)=>{
-            state.loading=true;
-        })
-        .addCase(checkAuth,)
-
-    }
-
-})
+// for the skill sync ai , i need to design it like the combination of the linear and git lab,
+// insomnia helper needed to be have a gps or map that shows the active current users in  your radious , 
+//you can adjust the radious to see the people in your circle,you can organise the events or meetups for 
+// the people are suffering from depression and suffering for specific diseases like cancers
+// the app will be like a social media for the people who are suffering from depression and specific diseases,
+// i want to make it helped to people meet strangers who are located near or who are suffering the same  

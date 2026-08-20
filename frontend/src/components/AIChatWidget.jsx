@@ -30,6 +30,11 @@ const AIChatWidget = () => {
     try {
       const taskObj = {
         ...taskSuggestion,
+        preference: taskSuggestion.preference || taskSuggestion.priority || "medium",
+        issueType: taskSuggestion.issueType || "task",
+        estimate: Number(taskSuggestion.estimate) || 1,
+        labels: taskSuggestion.labels || [],
+        cycle: taskSuggestion.cycle || "Backlog",
         project: currentProject._id,
         assignee: user?._id,
         status: "todo"
@@ -157,7 +162,7 @@ const AIChatWidget = () => {
                         <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "0.75rem", lineHeight: 1.4 }}>{t.description}</div>
                         
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span className={`status-badge status-${t.priority}`} style={{ fontSize: "0.65rem", padding: "0.1rem 0.5rem" }}>{t.priority}</span>
+                          <span className={`status-badge status-${t.preference || t.priority || "medium"}`} style={{ fontSize: "0.65rem", padding: "0.1rem 0.5rem" }}>{t.preference || t.priority || "medium"}</span>
                           
                           {currentProject && !t.isAssigned ? (
                             <button 

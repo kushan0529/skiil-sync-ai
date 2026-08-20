@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchProjectById, clearCurrentProject } from "../store/slices/projectSlice";
 import { fetchTasksByProjectId, updateTask, deleteTask, updateTaskProgressInState } from "../store/slices/taskSlice";
 import { fetchUsers } from "../store/slices/userSlice";
-import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, Minus, UserPlus, Calendar, Sparkles, Trash2, User } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, Clock, MoreVertical, Plus, Minus, UserPlus, Calendar, Sparkles, Trash2, Gauge, Tags, Layers } from "lucide-react";
 import AssignMemberModal from "../components/AssignMemberModal";
 import CreateTaskModal from "../components/CreateTaskModal";
 import { useAuth } from "../context/AuthContext";
@@ -306,6 +306,15 @@ const ProjectDetails = () => {
                     </div>
 
                     <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", fontWeight: 800 }}>
+                        {task.linearId || "SKL"}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                        <Layers size={14} /> {task.issueType || "task"}
+                      </span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                        <Gauge size={14} /> {task.estimate || 0} pts
+                      </span>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
                         <Clock size={14} /> Due {task.deadline ? new Date(task.deadline).toLocaleDateString() : "No deadline"}
                       </span>
@@ -327,6 +336,13 @@ const ProjectDetails = () => {
                           <span style={{ fontWeight: 600 }}>{task.assignee?.name || "Unassigned"}</span>
                         )}
                       </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem", color: "var(--text-muted)", fontSize: "0.78rem" }}>
+                      <Tags size={14} />
+                      <span style={{ fontWeight: 700 }}>{task.cycle || "Backlog"}</span>
+                      {(task.labels || []).map((label) => (
+                        <span key={label} style={{ border: "1px solid var(--border)", borderRadius: "999px", padding: "0.12rem 0.5rem", fontWeight: 700 }}>{label}</span>
+                      ))}
                     </div>
 
                     <DeadlineWarning deadline={task.deadline} status={task.status} />

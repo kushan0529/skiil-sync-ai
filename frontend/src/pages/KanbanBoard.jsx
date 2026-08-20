@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Plus, Minus, MoreVertical, Calendar, Briefcase, UserPlus, GripVertical, User } from "lucide-react";
+import { Plus, Minus, MoreVertical, Calendar, Briefcase, UserPlus, GripVertical, User, Gauge, Tags } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchAllTasks, updateTask, updateTaskStatusInState, updateTaskProgressInState } from "../store/slices/taskSlice";
 import { fetchUsers } from "../store/slices/userSlice";
@@ -127,12 +127,17 @@ const KanbanBoard = () => {
                                 <div {...provided2.dragHandleProps} style={{ color: "var(--text-muted)", cursor: "grab", display: "flex", alignItems: "center" }}>
                                   <GripVertical size={18} />
                                 </div>
-                                <span className={`status-badge status-${task.priority}`} style={{ fontSize: "0.65rem" }}>{task.priority}</span>
+                                <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", fontWeight: 800 }}>{task.linearId || "SKL"}</span>
+                                <span className={`status-badge status-${task.preference || "medium"}`} style={{ fontSize: "0.65rem" }}>{task.preference || "medium"}</span>
                               </div>
                               <button style={{ color: "var(--text-muted)" }}><MoreVertical size={16} /></button>
                             </div>
 
                             <h4 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.5rem", lineHeight: 1.4 }}>{task.title}</h4>
+                            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.9rem" }}>
+                              <span style={{ border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: "999px", padding: "0.15rem 0.5rem", fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase" }}>{task.issueType || "task"}</span>
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "0.25rem", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: "999px", padding: "0.15rem 0.5rem", fontSize: "0.68rem", fontWeight: 800 }}><Gauge size={12} /> {task.estimate || 0}</span>
+                            </div>
 
                             <div style={{ marginTop: "1rem" }}>
                               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.4rem" }}>
@@ -193,6 +198,10 @@ const KanbanBoard = () => {
                               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
                                 <Calendar size={14} />
                                 <span>{task.deadline ? new Date(task.deadline).toLocaleDateString(void 0, { month: "short", day: "numeric" }) : "No deadline"}</span>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                <Tags size={14} />
+                                <span>{task.cycle || "Backlog"}{(task.labels || []).length ? ` · ${task.labels.slice(0, 2).join(", ")}` : ""}</span>
                               </div>
                             </div>
                           </div>

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Briefcase, Calendar, User, LogOut, Moon, Sun, Users, Folder, Sparkles, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Briefcase, Calendar, User, LogOut, Moon, Sun, Users, Folder, Sparkles, ChevronRight, Zap } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 const Sidebar = () => {
@@ -15,6 +15,7 @@ const Sidebar = () => {
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: Folder, label: "Projects", path: "/projects" },
     { icon: Briefcase, label: "Kanban Board", path: "/kanban" },
+    { icon: Zap, label: "Linear", path: "/linear" },
     ...user?.role === "manager" || user?.role === "admin" ? [{ icon: Users, label: "Manager Hub", path: "/manager" }] : [],
     { icon: Calendar, label: "Calendar", path: "/calendar" },
     { icon: User, label: "Profile", path: "/profile" }
